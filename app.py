@@ -51,7 +51,7 @@ app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
 # Set the SECRET_KEY environment variable on your host; falls back to a
 # random value that is fine for this stateless app.
 app.config["SECRET_KEY"]        = os.environ.get("SECRET_KEY", os.urandom(32))
-app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024   # 15 MB upload cap
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024   # 50 MB upload cap (batch convert)
 
 # ── Rate limiter ───────────────────────────────────────────────────────────────
 # Protects the server from heavy CPU abuse (large image generation spam).
@@ -599,6 +599,113 @@ def api_remove_bg():
     filename = f"{stem}_nobg.png"
     return send_file(buf, mimetype="image/png",
                      as_attachment=False, download_name=filename)
+
+
+@app.route("/api/convert", methods=["POST"])
+@limiter.limit("20 per minute; 100 per hour")
+def api_convert():
+    """
+    Convert uploaded image(s) to a target format and return the result.
+
+    Expects multipart/form-data:
+      images  — one or more image files
+      format  — target format: PNG | JPEG | WEBP | BMP | TIFF | ICO
+      quality — JPEG/WEBP quality 1-100 (default 90)
+
+    Returns: single image file if one input, ZIP archive if multiple.
+    """
+    ALLOWED_FORMATS = {"PNG", "JPEG", "WEBP", "BMP", "TIFF", "ICO"}
+    ALLOWED_IN      = {"png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "ico"}
+
+    files = request.files.getlist("images")
+    files = [f for f in files if f and f.filename]
+    if not files:
+        return jsonify({"error": "No image files provided."}), 400
+
+    fmt = request.form.get("format", "PNG").upper()
+    if fmt not in ALLOWED_FORMATS:
+        return jsonify({"error": f"Unsupported output format '{fmt}'."}), 415
+
+    try:
+        quality = max(1, min(100, int(request.form.get("quality") or 90)))
+    except (ValueError, TypeError):
+        quality = 90
+
+    ext_map  = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp",
+                "BMP": "bmp", "TIFF": "tiff", "ICO": "ico"}
+    mime_map = {
+        "PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp",
+        "BMP": "image/bmp", "TIFF": "image/tiff", "ICO": "image/x-icon",
+    }
+    out_ext = ext_map[fmt]
+
+    converted: list[tuple[str, bytes]] = []
+
+    for f in files:
+        in_ext = (f.filename.rsplit(".", 1)[-1] if "." in f.filename else "").lower()
+        if in_ext not in ALLOWED_IN:
+            return jsonify({
+                "error": f"Unsupported input format '{in_ext}' for file '{f.filename}'."
+            }), 415
+
+        try:
+            img  = Image.open(f.stream)
+            stem = os.path.splitext(f.filename)[0]
+
+            # JPEG doesn't support alpha — flatten onto white background
+            if fmt == "JPEG":
+                if img.mode == "P":
+                    img = img.convert("RGBA")
+                if img.mode in ("RGBA", "LA"):
+                    bg = Image.new("RGB", img.size, (255, 255, 255))
+                    bg.paste(img, mask=img.split()[-1])
+                    img = bg
+                elif img.mode != "RGB":
+                    img = img.convert("RGB")
+            elif fmt in ("BMP",) and img.mode not in ("RGB", "L", "RGBA"):
+                img = img.convert("RGB")
+
+            buf         = io.BytesIO()
+            save_kwargs: dict = {}
+            if fmt in ("JPEG", "WEBP"):
+                save_kwargs["quality"] = quality
+            if fmt == "JPEG":
+                save_kwargs["optimize"] = True
+
+            img.save(buf, format=fmt, **save_kwargs)
+            buf.seek(0)
+            converted.append((f"{stem}.{out_ext}", buf.getvalue()))
+
+        except Exception as exc:
+            return jsonify({
+                "error": f"Failed to convert '{f.filename}': {exc}"
+            }), 500
+
+    if not converted:
+        return jsonify({"error": "No valid files to convert."}), 400
+
+    # Single file → return image directly
+    if len(converted) == 1:
+        name, data = converted[0]
+        return send_file(
+            io.BytesIO(data),
+            mimetype=mime_map[fmt],
+            as_attachment=False,
+            download_name=name,
+        )
+
+    # Multiple files → bundle into ZIP
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, data in converted:
+            zf.writestr(name, data)
+    zip_buf.seek(0)
+    return send_file(
+        zip_buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"converted_{len(converted)}_files.zip",
+    )
 
 
 @app.errorhandler(413)
