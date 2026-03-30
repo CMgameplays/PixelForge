@@ -44,9 +44,10 @@ try:
 except ImportError:
     REMBG_AVAILABLE = False
 
-# ffmpeg is optional — required only for video conversion.
+# ffmpeg / ffprobe are optional — required only for video conversion.
 # Detected once at startup; the route returns a clear error if missing.
 FFMPEG_PATH      = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+FFPROBE_PATH     = shutil.which("ffprobe") or shutil.which("ffprobe.exe")
 FFMPEG_AVAILABLE = FFMPEG_PATH is not None
 
 # ── Absolute path to this file's directory ────────────────────────────────────
@@ -782,6 +783,26 @@ def api_video_convert():
         file.save(in_path)
 
         if output_type == "MP3":
+            # ── Probe for audio streams before attempting conversion ──────────
+            if FFPROBE_PATH:
+                probe = subprocess.run(
+                    [
+                        FFPROBE_PATH, "-v", "error",
+                        "-select_streams", "a",
+                        "-show_entries", "stream=codec_type",
+                        "-of", "default=noprint_wrappers=1:nokey=1",
+                        in_path,
+                    ],
+                    capture_output=True, timeout=15,
+                )
+                if not probe.stdout.strip():
+                    return jsonify({
+                        "error": (
+                            "This video has no audio track — MP3 conversion is not possible. "
+                            "The file may be a video-only clip (common with Twitter/X downloads)."
+                        )
+                    }), 422
+
             out_path = os.path.join(tmp_dir, f"{stem}.mp3")
             cmd = [
                 FFMPEG_PATH, "-y", "-i", in_path,
