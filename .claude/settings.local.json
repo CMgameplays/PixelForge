@@ -18,7 +18,12 @@
       "Bash(python -c \"import flask; print\\(flask.__version__\\)\")",
       "Bash(python -m pip install --force-reinstall click)",
       "Bash(python -m pip install \"rembg[cpu]\")",
-      "Bash(ls E:/ClaudeCode/PixelForge/*.py)"
+      "Bash(ls E:/ClaudeCode/PixelForge/*.py)",
+      "Bash(winget install:*)",
+      "Bash(powershell.exe -Command \"winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements\")",
+      "Bash(powershell.exe -Command \"winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements 2>&1\")",
+      "Bash(powershell.exe -NoProfile -Command \"& { $result = winget install --id Gyan.FFmpeg -e --accept-package-agreements --accept-source-agreements; Write-Output $result }\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

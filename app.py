@@ -16,13 +16,17 @@ Routes
   POST /api/buttons/zip     → returns ZIP of all 3 button states
   POST /api/remove-bg       → returns background-removed PNG
   POST /api/convert         → returns converted image(s) as ZIP
+  POST /api/video/convert   → returns mp3 or gif converted from video (requires ffmpeg)
 
 © CMG Forge — https://github.com/CMGForge/pixelforge
 """
 
 import io
 import os
+import shutil
 import socket
+import subprocess
+import tempfile
 import threading
 import webbrowser
 import zipfile
@@ -39,6 +43,11 @@ try:
     REMBG_AVAILABLE = True
 except ImportError:
     REMBG_AVAILABLE = False
+
+# ffmpeg is optional — required only for video conversion.
+# Detected once at startup; the route returns a clear error if missing.
+FFMPEG_PATH      = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+FFMPEG_AVAILABLE = FFMPEG_PATH is not None
 
 # ── Absolute path to this file's directory ────────────────────────────────────
 # Ensures Flask always finds /templates regardless of where the process is
@@ -706,6 +715,121 @@ def api_convert():
         as_attachment=True,
         download_name=f"converted_{len(converted)}_files.zip",
     )
+
+
+@app.route("/api/video/convert", methods=["POST"])
+@limiter.limit("5 per minute; 20 per hour")
+def api_video_convert():
+    """
+    Convert a video file to MP3 (audio) or GIF (animation) using ffmpeg.
+
+    Expects multipart/form-data:
+      video   — single video file
+      output  — MP3 | GIF
+      bitrate — MP3 bitrate: 128k | 192k | 256k | 320k  (default 192k)
+      fps     — GIF frames per second 5-20               (default 10)
+      width   — GIF max width in px 240-800              (default 480)
+
+    Returns: the converted file as a download.
+    """
+    if not FFMPEG_AVAILABLE:
+        return jsonify({
+            "error": "ffmpeg is not installed or not found in PATH. "
+                     "Download it from https://ffmpeg.org/download.html and make sure "
+                     "it is accessible from the command line."
+        }), 503
+
+    if "video" not in request.files:
+        return jsonify({"error": "No video field in request."}), 400
+
+    file = request.files["video"]
+    if not file or file.filename == "":
+        return jsonify({"error": "No file selected."}), 400
+
+    ALLOWED_IN = {
+        "mp4", "mkv", "avi", "mov", "webm",
+        "flv", "wmv", "m4v", "mpeg", "mpg", "ts", "3gp",
+    }
+    in_ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()
+    if in_ext not in ALLOWED_IN:
+        return jsonify({"error": f"Unsupported video format '{in_ext}'."}), 415
+
+    output_type = request.form.get("output", "MP3").upper()
+    if output_type not in ("MP3", "GIF"):
+        return jsonify({"error": "output must be MP3 or GIF."}), 400
+
+    bitrate = request.form.get("bitrate", "192k")
+    if bitrate not in ("128k", "192k", "256k", "320k"):
+        bitrate = "192k"
+
+    try:
+        fps = max(5, min(20, int(request.form.get("fps") or 10)))
+    except (ValueError, TypeError):
+        fps = 10
+
+    try:
+        width = max(240, min(800, int(request.form.get("width") or 480)))
+        if width % 2 != 0:
+            width -= 1     # ffmpeg requires even dimensions for some filters
+    except (ValueError, TypeError):
+        width = 480
+
+    stem    = os.path.splitext(file.filename)[0]
+    tmp_dir = tempfile.mkdtemp()
+
+    try:
+        in_path = os.path.join(tmp_dir, f"input.{in_ext}")
+        file.save(in_path)
+
+        if output_type == "MP3":
+            out_path = os.path.join(tmp_dir, f"{stem}.mp3")
+            cmd = [
+                FFMPEG_PATH, "-y", "-i", in_path,
+                "-vn", "-acodec", "libmp3lame", "-ab", bitrate,
+                out_path,
+            ]
+            mime    = "audio/mpeg"
+            dl_name = f"{stem}.mp3"
+
+        else:  # GIF — single-pass palette generation via filtergraph
+            out_path = os.path.join(tmp_dir, f"{stem}.gif")
+            vf = (
+                f"fps={fps},scale={width}:-2:flags=lanczos,"
+                "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+            )
+            cmd = [
+                FFMPEG_PATH, "-y", "-i", in_path,
+                "-vf", vf,
+                out_path,
+            ]
+            mime    = "image/gif"
+            dl_name = f"{stem}.gif"
+
+        result = subprocess.run(cmd, capture_output=True, timeout=180)
+
+        if result.returncode != 0:
+            err_text = result.stderr.decode("utf-8", errors="replace")
+            # Return only the last 400 chars — enough for the relevant error line
+            return jsonify({"error": f"ffmpeg error: {err_text[-400:]}"}), 500
+
+        with open(out_path, "rb") as fh:
+            data = fh.read()
+
+        return send_file(
+            io.BytesIO(data),
+            mimetype=mime,
+            as_attachment=True,
+            download_name=dl_name,
+        )
+
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            "error": "Conversion timed out (180 s). Try a shorter or smaller video."
+        }), 500
+    except Exception as exc:
+        return jsonify({"error": f"Conversion failed: {exc}"}), 500
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 @app.errorhandler(413)

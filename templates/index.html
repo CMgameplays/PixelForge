@@ -1064,6 +1064,73 @@
           <span class="btn-label">⚡ CONVERT &amp; DOWNLOAD</span>
         </button>
 
+        <!-- ── Video Convert ────────────────────────────────── -->
+        <div style="margin: 28px -24px 0; border-top: 1px solid var(--border);"></div>
+
+        <div class="sec" style="margin-top:20px;"><span class="sec-icon">◆</span> VIDEO CONVERT <div class="sec-line"></div></div>
+
+        <div class="drop-zone" id="vid-drop-zone">
+          <span class="drop-icon">▶</span>
+          <p>Drag &amp; drop a video here</p>
+          <p class="drop-sub">or click to browse</p>
+          <p class="drop-fmts">MP4 · MKV · AVI · MOV · WEBM · FLV · WMV · M4V · MPEG · 3GP</p>
+          <input type="file" id="vid-file-input"
+                 accept="video/mp4,video/x-matroska,video/avi,video/quicktime,video/webm,video/x-flv,video/x-ms-wmv,video/x-m4v,video/mpeg,.mkv,.avi,.flv,.wmv,.m4v,.ts,.3gp" />
+        </div>
+
+        <div class="bg-selected hidden" id="vid-selected">
+          <span id="vid-selected-name">No file chosen</span>
+          <button class="bg-clear-btn" onclick="clearVidFile()" title="Remove">✕</button>
+        </div>
+
+        <!-- Output type -->
+        <div class="sec"><span class="sec-icon">◆</span> OUTPUT TYPE <div class="sec-line"></div></div>
+        <div class="fmt-btns">
+          <button class="fmt-btn active" data-vfmt="MP3" onclick="selectVideoFmt('MP3', this)">▶ MP3 (audio)</button>
+          <button class="fmt-btn"        data-vfmt="GIF" onclick="selectVideoFmt('GIF', this)">◎ GIF (animation)</button>
+        </div>
+
+        <!-- MP3 options -->
+        <div id="vid-mp3-opts">
+          <div class="sec"><span class="sec-icon">◆</span> BITRATE <div class="sec-line"></div></div>
+          <div class="fmt-btns" id="vid-bitrate-btns">
+            <button class="fmt-btn"        data-br="128k" onclick="selectBitrate('128k', this)">128k</button>
+            <button class="fmt-btn active" data-br="192k" onclick="selectBitrate('192k', this)">192k</button>
+            <button class="fmt-btn"        data-br="256k" onclick="selectBitrate('256k', this)">256k</button>
+            <button class="fmt-btn"        data-br="320k" onclick="selectBitrate('320k', this)">320k</button>
+          </div>
+        </div>
+
+        <!-- GIF options -->
+        <div id="vid-gif-opts" style="display:none;">
+          <div class="sec"><span class="sec-icon">◆</span> GIF OPTIONS <div class="sec-line"></div></div>
+          <div class="slider-row">
+            <label>FRAME RATE</label>
+            <input type="range" id="vid-fps" min="5" max="20" value="10"
+                   oninput="updateVal('vid-fps-val', this.value, ' fps')" />
+            <span class="slider-val" id="vid-fps-val">10 fps</span>
+          </div>
+          <div class="slider-row">
+            <label>MAX WIDTH</label>
+            <input type="range" id="vid-width" min="240" max="800" step="40" value="480"
+                   oninput="updateVal('vid-width-val', this.value, 'px')" />
+            <span class="slider-val" id="vid-width-val">480px</span>
+          </div>
+        </div>
+
+        <!-- ffmpeg note -->
+        <div class="bg-first-run-note">
+          Requires <strong>ffmpeg</strong> installed and available in your system PATH.<br/>
+          <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">
+            winget install ffmpeg &nbsp;·&nbsp; brew install ffmpeg &nbsp;·&nbsp; apt install ffmpeg
+          </span>
+        </div>
+
+        <!-- Action -->
+        <button class="btn-generate" id="vid-btn" onclick="convertVideo()" disabled>
+          <span class="btn-label">⚡ CONVERT VIDEO</span>
+        </button>
+
       </div><!-- /convert-section -->
 
     </div><!-- /controls-body -->
@@ -1153,12 +1220,26 @@
       </div>
     </div>
 
-    <!-- Convert preview -->
+    <!-- Image convert preview -->
     <div id="conv-preview-wrap" style="display:none;">
       <div class="conv-file-list" id="conv-file-list"></div>
       <div class="dl-row" id="conv-dl-row" style="margin-top:14px; display:none;">
         <span class="dl-filename" id="conv-dl-filename"></span>
         <button class="btn-sm" onclick="reDownloadConv()">↓ DOWNLOAD</button>
+      </div>
+    </div>
+
+    <!-- Video convert preview -->
+    <div id="vid-preview-wrap" style="display:none;">
+      <div id="vid-result-area">
+        <div class="placeholder" id="vid-empty-msg" style="padding:30px 20px;">
+          <div class="placeholder-icon" style="font-size:36px; opacity:.25;">▶</div>
+          <p style="font-size:12px;">Drop a video on the left,<br/>then hit Convert Video</p>
+        </div>
+      </div>
+      <div class="dl-row" id="vid-dl-row" style="margin-top:14px; display:none;">
+        <span class="dl-filename" id="vid-dl-filename"></span>
+        <button class="btn-sm" onclick="reDownloadVid()">↓ DOWNLOAD</button>
       </div>
     </div>
 
@@ -1237,6 +1318,7 @@
     document.getElementById('btn-preview-wrap').style.display    = mode === 'button'   ? 'block' : 'none';
     document.getElementById('bg-preview-wrap').style.display     = mode === 'bgremove' ? 'block' : 'none';
     document.getElementById('conv-preview-wrap').style.display   = mode === 'convert'  ? 'block' : 'none';
+    document.getElementById('vid-preview-wrap').style.display    = mode === 'convert'  ? 'block' : 'none';
     document.getElementById('welcome-placeholder').style.display = 'none';
 
     // BG remove + convert use fixed neutral accent; others use palette color
@@ -1737,6 +1819,170 @@
 
   function reDownloadConv() {
     const row = document.getElementById('conv-dl-row');
+    if (row.dataset.url) triggerDownload(row.dataset.url, row.dataset.filename);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     VIDEO CONVERT — drag & drop + file input
+  ══════════════════════════════════════════════════════════ */
+  let vidFile      = null;
+  let vidFmt       = 'MP3';
+  let vidBitrate   = '192k';
+  let vidResultUrl = null;
+
+  (function initVidDropZone() {
+    const zone  = document.getElementById('vid-drop-zone');
+    const input = document.getElementById('vid-file-input');
+
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+    zone.addEventListener('dragenter', e  => { e.preventDefault(); });
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) setVidFile(e.dataTransfer.files[0]);
+    });
+
+    input.addEventListener('change', e => {
+      if (e.target.files[0]) setVidFile(e.target.files[0]);
+    });
+  })();
+
+  function setVidFile(file) {
+    vidFile      = file;
+    vidResultUrl = null;
+
+    document.getElementById('vid-selected-name').textContent = file.name;
+    document.getElementById('vid-selected').classList.remove('hidden');
+    document.getElementById('vid-btn').disabled = false;
+
+    // Reset result area to placeholder
+    document.getElementById('vid-result-area').innerHTML = `
+      <div class="placeholder" style="padding:30px 20px;">
+        <div class="placeholder-icon" style="font-size:36px;opacity:.25;">▶</div>
+        <p style="font-size:12px;">${file.name}<br/><span style="color:var(--text-dim)">Ready — hit Convert Video</span></p>
+      </div>`;
+    document.getElementById('vid-dl-row').style.display = 'none';
+
+    if (currentMode !== 'convert') switchMode('convert');
+  }
+
+  function clearVidFile() {
+    vidFile      = null;
+    vidResultUrl = null;
+    document.getElementById('vid-file-input').value = '';
+    document.getElementById('vid-selected').classList.add('hidden');
+    document.getElementById('vid-btn').disabled = true;
+    document.getElementById('vid-result-area').innerHTML = `
+      <div class="placeholder" style="padding:30px 20px;">
+        <div class="placeholder-icon" style="font-size:36px;opacity:.25;">▶</div>
+        <p style="font-size:12px;">Drop a video on the left,<br/>then hit Convert Video</p>
+      </div>`;
+    document.getElementById('vid-dl-row').style.display = 'none';
+  }
+
+  function selectVideoFmt(fmt, el) {
+    vidFmt = fmt;
+    document.querySelectorAll('[data-vfmt]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('vid-mp3-opts').style.display = fmt === 'MP3' ? 'block' : 'none';
+    document.getElementById('vid-gif-opts').style.display = fmt === 'GIF' ? 'block' : 'none';
+  }
+
+  function selectBitrate(br, el) {
+    vidBitrate = br;
+    document.querySelectorAll('[data-br]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     VIDEO CONVERT — call server
+  ══════════════════════════════════════════════════════════ */
+  async function convertVideo() {
+    if (!vidFile) return;
+
+    const btn = document.getElementById('vid-btn');
+    setLoading(btn, true);
+    btn.querySelector('.btn-label').textContent = 'Converting\u2026';
+
+    // Show in-progress state
+    document.getElementById('vid-result-area').innerHTML = `
+      <div class="placeholder" style="padding:30px 20px;">
+        <div class="placeholder-icon" style="font-size:36px;opacity:.4;">⏳</div>
+        <p style="font-size:12px;">Converting — this may take a moment…</p>
+      </div>`;
+    document.getElementById('vid-dl-row').style.display = 'none';
+
+    try {
+      const fps   = parseInt(document.getElementById('vid-fps').value)   || 10;
+      const width = parseInt(document.getElementById('vid-width').value) || 480;
+
+      const form = new FormData();
+      form.append('video',   vidFile);
+      form.append('output',  vidFmt);
+      form.append('bitrate', vidBitrate);
+      form.append('fps',     fps);
+      form.append('width',   width);
+
+      const res = await fetch('/api/video/convert', { method: 'POST', body: form });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Server error ${res.status}`);
+      }
+
+      const blob    = await res.blob();
+      vidResultUrl  = URL.createObjectURL(blob);
+      const stem    = vidFile.name.replace(/\.[^.]+$/, '');
+      const ext     = vidFmt === 'MP3' ? 'mp3' : 'gif';
+      const filename = `${stem}.${ext}`;
+
+      // Show result in preview area
+      if (vidFmt === 'GIF') {
+        document.getElementById('vid-result-area').innerHTML = `
+          <div class="canvas-bg" style="min-height:160px;">
+            <img src="${vidResultUrl}" alt="Converted GIF"
+                 style="max-width:100%;max-height:420px;object-fit:contain;" />
+          </div>`;
+      } else {
+        document.getElementById('vid-result-area').innerHTML = `
+          <div style="padding:18px;background:var(--surface2);border:1px solid var(--border);">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
+                        letter-spacing:1px;margin-bottom:12px;">◈ MP3 READY</div>
+            <audio controls style="width:100%;filter:invert(1) hue-rotate(180deg);">
+              <source src="${vidResultUrl}" type="audio/mpeg">
+            </audio>
+          </div>`;
+      }
+
+      // Download row
+      const dlRow = document.getElementById('vid-dl-row');
+      dlRow.style.display    = 'flex';
+      dlRow.dataset.url      = vidResultUrl;
+      dlRow.dataset.filename = filename;
+      document.getElementById('vid-dl-filename').textContent = filename;
+
+      document.getElementById('preview-dim').textContent =
+        `${vidFile.name}  →  .${ext.toUpperCase()}`;
+
+      triggerDownload(vidResultUrl, filename);
+      toast(`Video converted to ${ext.toUpperCase()} & downloaded ✓`, 'success');
+
+    } catch (err) {
+      document.getElementById('vid-result-area').innerHTML = `
+        <div class="placeholder" style="padding:30px 20px;">
+          <p style="font-size:12px;color:#ff4040;">${err.message}</p>
+        </div>`;
+      toast(err.message, 'error');
+    } finally {
+      btn.querySelector('.btn-label').textContent = '\u26a1 CONVERT VIDEO';
+      setLoading(btn, false);
+    }
+  }
+
+  function reDownloadVid() {
+    const row = document.getElementById('vid-dl-row');
     if (row.dataset.url) triggerDownload(row.dataset.url, row.dataset.filename);
   }
 </script>
