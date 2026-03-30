@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-CMG Forge — PixelForge  |  app.py
-===================================
+CMG Forge — PixelForge  |  pixelforge.py
+=========================================
 A multi-tool for generating game-ready PNG UI assets.
 Built and owned by CMG Forge.
 
-LOCAL:      python app.py          → starts server, opens browser automatically
-PRODUCTION: gunicorn app:app       → Render / Railway / Fly.io / any WSGI host
+LOCAL:      python pixelforge.py          → starts server, opens browser automatically
+PRODUCTION: gunicorn pixelforge:app       → Render / Railway / Fly.io / any WSGI host
 
 Routes
 ------

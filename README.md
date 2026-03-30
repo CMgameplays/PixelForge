@@ -105,7 +105,7 @@ ffmpeg -version
 ## Running locally
 
 ```bash
-python app.py
+python pixelforge.py
 ```
 
 The server starts on `http://127.0.0.1:5000` and opens in your browser automatically.
@@ -116,7 +116,7 @@ The server starts on `http://127.0.0.1:5000` and opens in your browser automatic
 
 ```
 pixelforge/
-├── app.py               # Flask app — all routes and business logic
+├── pixelforge.py        # Flask app — all routes and business logic
 ├── requirements.txt     # Python dependencies
 ├── runtime.txt          # Python version pin (for deployment)
 ├── Procfile             # Gunicorn entry point (for deployment)
@@ -149,7 +149,7 @@ The app is production-ready with Gunicorn. It can be deployed to any WSGI-compat
 
 The `Procfile` is already configured:
 ```
-web: gunicorn app:app --workers 2 --timeout 120 --bind 0.0.0.0:$PORT
+web: gunicorn pixelforge:app --workers 2 --timeout 120 --bind 0.0.0.0:$PORT
 ```
 
 Just connect your GitHub repo and deploy — no extra configuration needed for the core image features. Note that `rembg` and `ffmpeg` may require additional setup depending on your host's environment.
