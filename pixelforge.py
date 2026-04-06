@@ -23,6 +23,7 @@ Routes
 
 import io
 import os
+import sys
 import shutil
 import socket
 import subprocess
@@ -31,10 +32,17 @@ import threading
 import webbrowser
 import zipfile
 
-from flask import Flask, jsonify, render_template, request, send_file
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from flask import Blueprint, jsonify, render_template, request, send_file
 from PIL import Image, ImageChops, ImageDraw
+
+try:
+    from shared.limiter import limiter
+except ImportError:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(get_remote_address, storage_uri="memory://")
 
 # rembg is optional — app starts fine without it; the route returns a clear
 # error message if someone tries to use BG removal without it installed.
@@ -45,37 +53,14 @@ except ImportError:
     REMBG_AVAILABLE = False
 
 # ffmpeg / ffprobe are optional — required only for video conversion.
-# Detected once at startup; the route returns a clear error if missing.
 FFMPEG_PATH      = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
 FFPROBE_PATH     = shutil.which("ffprobe") or shutil.which("ffprobe.exe")
 FFMPEG_AVAILABLE = FFMPEG_PATH is not None
 
-# ── Absolute path to this file's directory ────────────────────────────────────
-# Ensures Flask always finds /templates regardless of where the process is
-# launched from (Gunicorn, double-click, PyInstaller, etc.)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
-
-# Flask needs a secret key in production (sessions, signed cookies).
-# Set the SECRET_KEY environment variable on your host; falls back to a
-# random value that is fine for this stateless app.
-app.config["SECRET_KEY"]        = os.environ.get("SECRET_KEY", os.urandom(32))
-app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024   # 50 MB upload cap (batch convert)
-
-# ── Rate limiter ───────────────────────────────────────────────────────────────
-# Protects the server from heavy CPU abuse (large image generation spam).
-# Limits are per IP address; in-memory storage is fine for a single-process app.
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=[],          # no default — only annotated routes are limited
-    storage_uri="memory://",
-)
+bp = Blueprint("pixelforge", __name__, template_folder="templates")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PALETTE
-# Six neon/game-UI colors available to the user.
 # ══════════════════════════════════════════════════════════════════════════════
 
 PALETTE: dict[str, tuple[int, int, int]] = {
@@ -89,17 +74,14 @@ PALETTE: dict[str, tuple[int, int, int]] = {
 
 
 def get_color(name: str) -> tuple[int, int, int]:
-    """Return RGB tuple for a named palette color (defaults to blue)."""
     return PALETTE.get(name.lower(), PALETTE["blue"])
 
 
 def dim(color: tuple, factor: float) -> tuple[int, int, int]:
-    """Scale all RGB channels by factor and clamp to [0, 255]."""
     return tuple(min(255, max(0, int(c * factor))) for c in color[:3])
 
 
 def rgba(color: tuple, alpha: int = 255) -> tuple[int, int, int, int]:
-    """Append an alpha channel to an RGB tuple."""
     return (*color[:3], int(max(0, min(255, alpha))))
 
 
@@ -115,45 +97,28 @@ def draw_diagonal_pattern(
     thickness: int,
     color: tuple,
 ) -> None:
-    """
-    Draw 45-degree diagonal lines (top-left → bottom-right, slope = +1)
-    that are perfectly clipped to the rectangle (rx1, ry1) – (rx2, ry2).
-
-    Maths
-    -----
-    Line equation :  y = x + c
-      c_min = ry1 - rx2   (tangent to top-right corner of rect)
-      c_max = ry2 - rx1   (tangent to bottom-left corner of rect)
-
-    For each c we intersect the line with all 4 edges and keep only
-    the 2 points that lie on the edge *and* inside the rect.
-    """
     if rx2 <= rx1 or ry2 <= ry1:
         return
 
     step  = max(1, spacing)
-    c     = ry1 - rx2   # first line value
-    c_max = ry2 - rx1   # last line value
+    c     = ry1 - rx2
+    c_max = ry2 - rx1
 
     while c <= c_max:
         pts: list[tuple[int, int]] = []
 
-        # ── left edge  x = rx1  →  y = rx1 + c ─────────────────────────
         y = rx1 + c
         if ry1 <= y <= ry2:
             pts.append((rx1, int(y)))
 
-        # ── top edge   y = ry1  →  x = ry1 − c ─────────────────────────
         x = ry1 - c
-        if rx1 < x < rx2:          # strict inequality avoids corner duplicates
+        if rx1 < x < rx2:
             pts.append((int(x), ry1))
 
-        # ── right edge x = rx2  →  y = rx2 + c ─────────────────────────
         y = rx2 + c
         if ry1 <= y <= ry2:
             pts.append((rx2, int(y)))
 
-        # ── bottom edge y = ry2 →  x = ry2 − c ─────────────────────────
         x = ry2 - c
         if rx1 < x < rx2:
             pts.append((int(x), ry2))
@@ -178,33 +143,15 @@ def generate_frame(
     pattern_thickness: int = 1,
     corner_radius: int = 0,
 ) -> Image.Image:
-    """
-    Procedurally render a game UI frame on a transparent RGBA canvas.
-
-    Layer order (back to front)
-    ───────────────────────────
-    1. Outer glow   — 5 concentric rings at decreasing alpha (NO blur)
-    2. Outer border — full-brightness color, `border_thickness` px thick
-    3. Gap          — transparent space between the two borders
-    4. Inner border — 65 % brightness, 1 px thinner
-    5. Pattern      — 45 ° diagonal lines clipped to interior (optional)
-    6. Rounded mask — applied last to clip all layers to rounded shape
-
-    corner_radius = 0  →  sharp square corners (default)
-    corner_radius > 0  →  rounded corners; inner border radius auto-adjusted
-    """
     base = get_color(color_name)
     bt   = max(1, border_thickness)
-    gap  = bt + 3          # pixels between outer border edge and inner border
-    cr   = max(0, corner_radius)            # outer corner radius
-    cr_i = max(0, cr - gap)                 # inner border corner radius (concentric)
+    gap  = bt + 3
+    cr   = max(0, corner_radius)
+    cr_i = max(0, cr - gap)
 
     img  = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # ── 1. Outer glow (stacked semi-transparent concentric rects) ─────────
-    # Drawn inside the image boundary; border covers the innermost layers.
-    # Alpha steps: 10 → 20 → 30 → 40 → 50  (outermost → innermost)
     for g in range(5, 0, -1):
         draw.rectangle(
             [g, g, width - 1 - g, height - 1 - g],
@@ -212,7 +159,6 @@ def generate_frame(
             width=1,
         )
 
-    # ── 2. Outer border ───────────────────────────────────────────────────
     if cr > 0:
         draw.rounded_rectangle(
             [0, 0, width - 1, height - 1],
@@ -227,7 +173,6 @@ def generate_frame(
             width=bt,
         )
 
-    # ── 3 + 4. Inner border ───────────────────────────────────────────────
     inner_bt    = max(1, bt - 1)
     inner_color = rgba(dim(base, 0.65), 200)
     ix1, iy1    = gap, gap
@@ -244,9 +189,7 @@ def generate_frame(
         else:
             draw.rectangle([ix1, iy1, ix2, iy2], outline=inner_color, width=inner_bt)
 
-    # ── 5. Interior diagonal line pattern (optional) ──────────────────────
     if enable_pattern:
-        # Clip region: just inside the inner border
         px1 = ix1 + inner_bt + 2
         py1 = iy1 + inner_bt + 2
         px2 = ix2 - inner_bt - 2
@@ -259,9 +202,6 @@ def generate_frame(
                 pattern_spacing, pattern_thickness, pat_color,
             )
 
-    # ── 6. Rounded corner mask ────────────────────────────────────────────
-    # Clips every layer drawn above (including the glow rings) to the
-    # rounded rectangle shape.  At cr=0 this step is skipped entirely.
     if cr > 0:
         mask      = Image.new("L", (width, height), 0)
         mask_draw = ImageDraw.Draw(mask)
@@ -270,7 +210,6 @@ def generate_frame(
             radius=cr,
             fill=255,
         )
-        # Multiply existing per-pixel alpha with the shape mask
         _, _, _, alpha = img.split()
         img.putalpha(ImageChops.multiply(alpha, mask))
 
@@ -287,7 +226,6 @@ def _vertical_gradient(
     bot_rgb: tuple[int, int, int],
     alpha: int,
 ) -> Image.Image:
-    """Utility: render a vertical linear-gradient RGBA image."""
     img  = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     for y in range(height):
@@ -302,27 +240,18 @@ def _vertical_gradient(
 def generate_button_normal(
     width: int, height: int, color_name: str, border_thickness: int = 2
 ) -> Image.Image:
-    """
-    NORMAL state
-    ─────────────
-    • Dark vertical gradient (top slightly lighter → bottom darker)
-    • Thin colored border at 200 alpha
-    • 1-px inner top highlight at low opacity
-    """
     base = get_color(color_name)
     bt   = max(1, border_thickness)
 
     img  = _vertical_gradient(width, height, (18, 21, 33), (10, 13, 22), 242)
     draw = ImageDraw.Draw(img)
 
-    # Colored border
     draw.rectangle(
         [0, 0, width - 1, height - 1],
         outline=rgba(base, 200),
         width=bt,
     )
 
-    # Subtle 1-px highlight just inside the top border
     hl = dim(base, 1.7)
     draw.line(
         [(bt, bt), (width - 1 - bt, bt)],
@@ -336,56 +265,40 @@ def generate_button_normal(
 def generate_button_hovered(
     width: int, height: int, color_name: str, border_thickness: int = 2
 ) -> Image.Image:
-    """
-    HOVERED state
-    ──────────────
-    • Lighter gradient base + translucent color tint overlay
-    • Inner glow: 5 concentric rings at decreasing alpha (no blur)
-    • Brighter border at full opacity
-    • Gradient inner highlight block at top (~1/5 height)
-    • Crisp 1-px top highlight line at high opacity
-    """
     base   = get_color(color_name)
     bright = dim(base, 1.35)
     bt     = max(1, border_thickness)
 
-    # Lighter background
     img = _vertical_gradient(width, height, (26, 30, 46), (16, 19, 31), 245)
 
-    # Translucent color tint overlay (gives button a "colored" feel on hover)
     tint = Image.new("RGBA", (width, height), rgba(base, 20))
     img  = Image.alpha_composite(img, tint)
 
     draw = ImageDraw.Draw(img)
 
-    # Inner glow rings (simulate outer glow within the image boundary)
-    # Drawn before the border so the border sits cleanly on top.
     for g in range(6, 0, -1):
         draw.rectangle(
             [g, g, width - 1 - g, height - 1 - g],
-            outline=rgba(base, 10 * g),   # 10 → 20 → 30 → 40 → 50 → 60
+            outline=rgba(base, 10 * g),
             width=1,
         )
 
-    # Bright border
     draw.rectangle(
         [0, 0, width - 1, height - 1],
         outline=rgba(bright, 255),
         width=bt,
     )
 
-    # Gradient inner highlight block (top portion of button interior)
     hl   = dim(base, 1.9)
     hl_h = max(2, height // 5)
     for y in range(hl_h):
-        t     = 1.0 - y / hl_h           # 1.0 (top) → 0.0 (bottom) — fades out
+        t     = 1.0 - y / hl_h
         alpha = int(50 * t)
         draw.line(
             [(bt, bt + y), (width - 1 - bt, bt + y)],
             fill=rgba(hl, alpha),
         )
 
-    # Crisp 1-px top highlight line
     draw.line(
         [(bt, bt), (width - 1 - bt, bt)],
         fill=rgba(hl, 210),
@@ -398,40 +311,27 @@ def generate_button_hovered(
 def generate_button_clicked(
     width: int, height: int, color_name: str, border_thickness: int = 2
 ) -> Image.Image:
-    """
-    CLICKED state
-    ──────────────
-    • Darker gradient (pressed-into-surface feel)
-    • Dimmer border at 55 % brightness
-    • Inner shadow: gradient dark overlay on top edge (top → transparent)
-    • Inner shadow: gradient dark overlay on left edge (left → transparent)
-    • Reverse highlights on bottom + right edges (lifted-edge illusion)
-    """
     base = get_color(color_name)
     dark = dim(base, 0.55)
     bt   = max(1, border_thickness)
 
-    # Darker background
     img  = _vertical_gradient(width, height, (9, 11, 19), (6, 8, 15), 255)
     draw = ImageDraw.Draw(img)
 
-    # Dimmer border
     draw.rectangle(
         [0, 0, width - 1, height - 1],
         outline=rgba(dark, 210),
         width=bt,
     )
 
-    # Inner shadow — top edge (gradient: opaque black → transparent)
     sh = max(3, height // 6)
     for i in range(sh):
-        t = (1.0 - i / sh) ** 1.6      # non-linear falloff for realism
+        t = (1.0 - i / sh) ** 1.6
         draw.line(
             [(bt, bt + i), (width - 1 - bt, bt + i)],
             fill=(0, 0, 0, int(115 * t)),
         )
 
-    # Inner shadow — left edge
     sw = max(2, width // 10)
     for i in range(sw):
         t = (1.0 - i / sw) ** 1.6
@@ -440,7 +340,6 @@ def generate_button_clicked(
             fill=(0, 0, 0, int(75 * t)),
         )
 
-    # Reverse highlights (bottom + right appear lighter → pressed look)
     hl = dim(base, 0.72)
     draw.line(
         [(bt, height - 1 - bt), (width - 1 - bt, height - 1 - bt)],
@@ -460,22 +359,14 @@ def generate_button_clicked(
 # FLASK ROUTES
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.route("/")
+@bp.route("/")
 def index() -> str:
-    """Serve the main UI page."""
-    return render_template("index.html", colors=list(PALETTE.keys()))
+    return render_template("pixelforge/index.html", colors=list(PALETTE.keys()))
 
 
-@app.route("/api/frame", methods=["POST"])
+@bp.route("/api/frame", methods=["POST"])
 @limiter.limit("30 per minute; 200 per hour")
 def api_frame():
-    """
-    POST body (JSON):
-      width, height, color, border_thickness,
-      enable_pattern, pattern_spacing, pattern_thickness,
-      corner_radius
-    Returns: PNG image (inline — client decides download vs. preview).
-    """
     d  = request.get_json(force=True) or {}
     w  = max(20, min(4000, int(d.get("width",  400))))
     h  = max(20, min(4000, int(d.get("height", 300))))
@@ -498,14 +389,9 @@ def api_frame():
                      as_attachment=False, download_name=filename)
 
 
-@app.route("/api/button/<state>", methods=["POST"])
+@bp.route("/api/button/<state>", methods=["POST"])
 @limiter.limit("30 per minute; 200 per hour")
 def api_button(state: str):
-    """
-    POST body (JSON):  width, height, color, border_thickness
-    URL param <state>: normal | hovered | clicked
-    Returns: PNG image (inline).
-    """
     generators = {
         "normal":  generate_button_normal,
         "hovered": generate_button_hovered,
@@ -530,13 +416,9 @@ def api_button(state: str):
                      download_name=f"btn_{state}_{w}x{h}.png")
 
 
-@app.route("/api/buttons/zip", methods=["POST"])
+@bp.route("/api/buttons/zip", methods=["POST"])
 @limiter.limit("15 per minute; 100 per hour")
 def api_buttons_zip():
-    """
-    POST body (JSON):  width, height, color, border_thickness
-    Returns: ZIP archive containing all 3 button-state PNGs.
-    """
     d  = request.get_json(force=True) or {}
     w  = max(20, min(4000, int(d.get("width",  270))))
     h  = max(10, min(4000, int(d.get("height",  68))))
@@ -565,19 +447,9 @@ def api_buttons_zip():
     )
 
 
-@app.route("/api/remove-bg", methods=["POST"])
+@bp.route("/api/remove-bg", methods=["POST"])
 @limiter.limit("10 per minute; 40 per hour")
 def api_remove_bg():
-    """
-    Remove the background from an uploaded image and return a transparent PNG.
-
-    Expects multipart/form-data with a single field named 'image'.
-    Accepted formats: PNG, JPG/JPEG, WEBP, BMP — max 15 MB.
-
-    Uses the rembg library (U²-Net neural network, runs fully offline).
-    On first call the model is downloaded automatically (~170 MB, cached
-    in ~/.u2net/ for all future calls).
-    """
     if not REMBG_AVAILABLE:
         return jsonify({
             "error": "rembg is not installed. Run: pip install rembg"
@@ -590,7 +462,6 @@ def api_remove_bg():
     if not file or file.filename == "":
         return jsonify({"error": "No file selected."}), 400
 
-    # Validate extension
     ALLOWED = {"png", "jpg", "jpeg", "webp", "bmp"}
     ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()
     if ext not in ALLOWED:
@@ -599,31 +470,20 @@ def api_remove_bg():
         }), 415
 
     input_bytes  = file.read()
-    output_bytes = _rembg_remove(input_bytes)   # returns PNG bytes with alpha
+    output_bytes = _rembg_remove(input_bytes)
 
     buf = io.BytesIO(output_bytes)
     buf.seek(0)
 
-    # Preserve original stem, always output as PNG (transparency requires PNG)
     stem     = os.path.splitext(file.filename)[0]
     filename = f"{stem}_nobg.png"
     return send_file(buf, mimetype="image/png",
                      as_attachment=False, download_name=filename)
 
 
-@app.route("/api/convert", methods=["POST"])
+@bp.route("/api/convert", methods=["POST"])
 @limiter.limit("20 per minute; 100 per hour")
 def api_convert():
-    """
-    Convert uploaded image(s) to a target format and return the result.
-
-    Expects multipart/form-data:
-      images  — one or more image files
-      format  — target format: PNG | JPEG | WEBP | BMP | TIFF | ICO
-      quality — JPEG/WEBP quality 1-100 (default 90)
-
-    Returns: single image file if one input, ZIP archive if multiple.
-    """
     ALLOWED_FORMATS = {"PNG", "JPEG", "WEBP", "BMP", "TIFF", "ICO"}
     ALLOWED_IN      = {"png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "ico"}
 
@@ -662,7 +522,6 @@ def api_convert():
             img  = Image.open(f.stream)
             stem = os.path.splitext(f.filename)[0]
 
-            # JPEG doesn't support alpha — flatten onto white background
             if fmt == "JPEG":
                 if img.mode == "P":
                     img = img.convert("RGBA")
@@ -694,7 +553,6 @@ def api_convert():
     if not converted:
         return jsonify({"error": "No valid files to convert."}), 400
 
-    # Single file → return image directly
     if len(converted) == 1:
         name, data = converted[0]
         return send_file(
@@ -704,7 +562,6 @@ def api_convert():
             download_name=name,
         )
 
-    # Multiple files → bundle into ZIP
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, data in converted:
@@ -718,21 +575,9 @@ def api_convert():
     )
 
 
-@app.route("/api/video/convert", methods=["POST"])
+@bp.route("/api/video/convert", methods=["POST"])
 @limiter.limit("5 per minute; 20 per hour")
 def api_video_convert():
-    """
-    Convert a video file to MP3 (audio) or GIF (animation) using ffmpeg.
-
-    Expects multipart/form-data:
-      video   — single video file
-      output  — MP3 | GIF
-      bitrate — MP3 bitrate: 128k | 192k | 256k | 320k  (default 192k)
-      fps     — GIF frames per second 5-20               (default 10)
-      width   — GIF max width in px 240-800              (default 480)
-
-    Returns: the converted file as a download.
-    """
     if not FFMPEG_AVAILABLE:
         return jsonify({
             "error": "ffmpeg is not installed or not found in PATH. "
@@ -771,7 +616,7 @@ def api_video_convert():
     try:
         width = max(240, min(800, int(request.form.get("width") or 480)))
         if width % 2 != 0:
-            width -= 1     # ffmpeg requires even dimensions for some filters
+            width -= 1
     except (ValueError, TypeError):
         width = 480
 
@@ -783,7 +628,6 @@ def api_video_convert():
         file.save(in_path)
 
         if output_type == "MP3":
-            # ── Probe for audio streams before attempting conversion ──────────
             if FFPROBE_PATH:
                 probe = subprocess.run(
                     [
@@ -812,7 +656,7 @@ def api_video_convert():
             mime    = "audio/mpeg"
             dl_name = f"{stem}.mp3"
 
-        else:  # GIF — single-pass palette generation via filtergraph
+        else:
             out_path = os.path.join(tmp_dir, f"{stem}.gif")
             vf = (
                 f"fps={fps},scale={width}:-2:flags=lanczos,"
@@ -830,7 +674,6 @@ def api_video_convert():
 
         if result.returncode != 0:
             err_text = result.stderr.decode("utf-8", errors="replace")
-            # Return only the last 400 chars — enough for the relevant error line
             return jsonify({"error": f"ffmpeg error: {err_text[-400:]}"}), 500
 
         with open(out_path, "rb") as fh:
@@ -853,27 +696,17 @@ def api_video_convert():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-@app.errorhandler(413)
-def too_large(_e):
-    """File exceeds MAX_CONTENT_LENGTH."""
-    return jsonify({"error": "File too large. Maximum upload size is 15 MB."}), 413
-
-
 # ══════════════════════════════════════════════════════════════════════════════
 # LAUNCH HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Cloud platforms set well-known environment variables.
-# We use their presence to decide local vs. production behaviour.
 _CLOUD_SIGNALS = ("RENDER", "RAILWAY_ENVIRONMENT", "FLY_APP_NAME", "DYNO")
 
 def _is_local() -> bool:
-    """Return True when running on a developer's machine, False on any cloud host."""
     return not any(os.environ.get(sig) for sig in _CLOUD_SIGNALS)
 
 
 def find_free_port(start: int = 5000) -> int:
-    """Scan ports from `start` upward and return the first available one."""
     for port in range(start, start + 100):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -885,21 +718,26 @@ def find_free_port(start: int = 5000) -> int:
 
 
 def _open_browser(port: int) -> None:
-    """Wait briefly for Flask to start, then open the default browser."""
     import time
     time.sleep(1.2)
     webbrowser.open(f"http://127.0.0.1:{port}")
 
 
 if __name__ == "__main__":
+    from flask import Flask
     local = _is_local()
+    port  = int(os.environ.get("PORT", find_free_port() if local else 8080))
+    host  = "127.0.0.1" if local else "0.0.0.0"
 
-    # Cloud platforms inject PORT; locally we scan for a free one.
-    port = int(os.environ.get("PORT", find_free_port() if local else 8080))
+    standalone = Flask(__name__)
+    standalone.config["SECRET_KEY"]         = os.environ.get("SECRET_KEY", os.urandom(32))
+    standalone.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+    standalone.register_blueprint(bp, url_prefix="/")
+    limiter.init_app(standalone)
 
-    # Bind to localhost only when running locally (safer).
-    # Bind to all interfaces in production so the platform can route traffic.
-    host = "127.0.0.1" if local else "0.0.0.0"
+    @standalone.errorhandler(413)
+    def too_large(_e):
+        return jsonify({"error": "File too large. Maximum upload size is 50 MB."}), 413
 
     print(f"\n  ◈ CMG Forge — PixelForge")
     print(f"  ──────────────────────────")
@@ -907,8 +745,7 @@ if __name__ == "__main__":
     print(f"  Server  →  http://{host}:{port}")
     print(f"  Press   Ctrl+C to stop\n")
 
-    # Auto-open browser only on local — no desktop on a cloud server.
     if local:
         threading.Thread(target=_open_browser, args=(port,), daemon=True).start()
 
-    app.run(debug=False, host=host, port=port)
+    standalone.run(debug=False, host=host, port=port)
