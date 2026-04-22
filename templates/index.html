@@ -1,8 +1,7 @@
 <!--
-  PixelForge — index.html
-  ========================
+  PixelForge — index.html (standalone)
+  ======================================
   CMG Forge | Game UI Asset Toolkit
-  © CMG Forge — https://github.com/CMGForge/pixelforge
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -13,40 +12,41 @@
   <meta name="author" content="CMG Forge" />
   <meta name="description" content="PixelForge — Game UI asset generator by CMG Forge. Procedural frames, buttons, background removal, and image conversion." />
 
-  <!-- Google Fonts — Rajdhani (UI) + Share Tech Mono (numeric values) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
 
   <style>
     /* ══════════════════════════════════════════════════════════
-       DESIGN TOKENS
+       CMG FORGE DESIGN TOKENS
     ══════════════════════════════════════════════════════════ */
     :root {
-      --bg:           #08090f;
-      --surface:      #0e1018;
-      --surface2:     #13151f;
-      --surface3:     #191c28;
-      --border:       #1c1f30;
-      --border-hi:    #2c3050;
-      --text:         #c8d0e8;
-      --text-dim:     #4e5570;
-      --text-bright:  #e6eeff;
+      --forge-bg:      #08090f;
+      --forge-surface: #0f1120;
+      --forge-purple:  #a855f7;
+      --forge-indigo:  #6366f1;
+      --forge-ember:   #f97316;
+      --forge-text:    #f1f5f9;
+      --forge-muted:   #64748b;
+      --forge-green:   #22c55e;
+
+      --bg:           var(--forge-bg);
+      --surface:      var(--forge-surface);
+      --surface2:     #111827;
+      --surface3:     #1a2035;
+      --border:       rgba(99, 102, 241, 0.12);
+      --border-hi:    rgba(168, 85, 247, 0.22);
+      --text:         var(--forge-text);
+      --text-dim:     var(--forge-muted);
+      --text-bright:  #ffffff;
       --font-ui:      'Rajdhani', 'Segoe UI', system-ui, sans-serif;
       --font-mono:    'Share Tech Mono', 'Consolas', monospace;
 
-      /* Dynamic accent — updated by JS when color swatch is selected */
-      --accent:       #0096ff;
-      --accent-20:    rgba(0,150,255,0.20);
-      --accent-08:    rgba(0,150,255,0.08);
-      --accent-glow:  rgba(0,150,255,0.45);
+      --accent:       var(--forge-indigo);
+      --accent-20:    rgba(99, 102, 241, 0.20);
+      --accent-08:    rgba(99, 102, 241, 0.08);
+      --accent-glow:  rgba(99, 102, 241, 0.45);
     }
 
-    /* ══════════════════════════════════════════════════════════
-       RESET + BASE
-    ══════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
@@ -59,90 +59,93 @@
       overflow-x: hidden;
     }
 
-    /* Thin scrollbar */
-    ::-webkit-scrollbar            { width: 6px; }
-    ::-webkit-scrollbar-track      { background: var(--bg); }
-    ::-webkit-scrollbar-thumb      { background: var(--border-hi); }
-    ::-webkit-scrollbar-thumb:hover{ background: var(--accent); }
+    body {
+      background-image:
+        linear-gradient(rgba(99, 102, 241, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
 
-    /* ══════════════════════════════════════════════════════════
-       HEADER
-    ══════════════════════════════════════════════════════════ */
-    header {
+    ::-webkit-scrollbar            { width: 5px; }
+    ::-webkit-scrollbar-track      { background: var(--bg); }
+    ::-webkit-scrollbar-thumb      { background: rgba(99,102,241,0.30); }
+    ::-webkit-scrollbar-thumb:hover{ background: var(--forge-indigo); }
+
+    .navbar {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 14px 28px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 52px;
+      background: rgba(8, 9, 15, 0.96);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.18);
       position: sticky;
       top: 0;
       z-index: 100;
+      backdrop-filter: blur(8px);
     }
 
-    .logo {
-      width: 36px;
-      height: 36px;
-      border: 2px solid var(--accent);
-      display: grid;
-      place-items: center;
-      font-size: 18px;
-      color: var(--accent);
-      flex-shrink: 0;
-      box-shadow: 0 0 12px var(--accent-glow);
-      transition: box-shadow .3s;
-    }
-
-    .header-title h1 {
-      font-size: 17px;
+    .nav-logo {
+      font-family: var(--font-ui);
       font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 4px;
+      color: var(--forge-text);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-logo:hover { color: var(--forge-indigo); }
+
+    .nav-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(99, 102, 241, 0.25);
+      margin: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .nav-tool {
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 12px;
       letter-spacing: 3px;
-      color: var(--text-bright);
-      line-height: 1.1;
+      color: var(--forge-indigo);
     }
 
-    .header-title span {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-    }
-
-    .header-badge {
+    .nav-all-tools {
       margin-left: auto;
-      font-family: var(--font-mono);
+      font-family: var(--font-ui);
+      font-weight: 700;
       font-size: 11px;
-      color: var(--text-dim);
-      border: 1px solid var(--border);
-      padding: 3px 10px;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
+      color: var(--forge-muted);
+      text-decoration: none;
+      border: 1px solid rgba(99, 102, 241, 0.20);
+      padding: 5px 14px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .nav-all-tools:hover {
+      color: var(--forge-text);
+      border-color: rgba(99, 102, 241, 0.50);
     }
 
-    /* ══════════════════════════════════════════════════════════
-       LAYOUT
-    ══════════════════════════════════════════════════════════ */
     main {
       display: grid;
       grid-template-columns: 400px 1fr;
-      min-height: calc(100vh - 65px);
+      min-height: calc(100vh - 52px - 44px);
     }
 
     @media (max-width: 880px) {
       main { grid-template-columns: 1fr; }
     }
 
-    /* ══════════════════════════════════════════════════════════
-       CONTROLS PANEL (left)
-    ══════════════════════════════════════════════════════════ */
     .controls-panel {
       border-right: 1px solid var(--border);
       padding: 0 0 40px;
       display: flex;
       flex-direction: column;
-      background: var(--surface);
+      background: rgba(15, 17, 32, 0.85);
     }
 
-    /* ── Mode tabs ─────────────────────────────────────────── */
     .tabs {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -150,13 +153,13 @@
     }
 
     .tab {
-      padding: 15px 0;
+      padding: 14px 0;
       background: transparent;
       border: none;
       border-right: 1px solid var(--border);
       color: var(--text-dim);
       font-family: var(--font-ui);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 1.5px;
       cursor: pointer;
@@ -165,12 +168,11 @@
     }
 
     .tab:last-child { border-right: none; }
-
-    .tab:hover { color: var(--text); background: var(--surface2); }
+    .tab:hover { color: var(--forge-text); background: rgba(99,102,241,0.05); }
 
     .tab.active {
-      color: var(--accent);
-      background: var(--surface2);
+      color: var(--forge-indigo);
+      background: rgba(99,102,241,0.08);
     }
 
     .tab.active::after {
@@ -178,11 +180,9 @@
       position: absolute;
       bottom: -1px; left: 0; right: 0;
       height: 2px;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
+      background: var(--forge-indigo);
     }
 
-    /* ── Controls body ─────────────────────────────────────── */
     .controls-body {
       padding: 0 24px;
       flex: 1;
@@ -191,27 +191,20 @@
     .mode-section { display: none; }
     .mode-section.active { display: block; }
 
-    /* ── Section header ────────────────────────────────────── */
     .sec {
       display: flex;
       align-items: center;
       gap: 10px;
       margin: 22px 0 14px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       letter-spacing: 2.5px;
       color: var(--text-dim);
     }
 
-    .sec-line {
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+    .sec-line { flex: 1; height: 1px; background: var(--border); }
+    .sec-icon { color: var(--forge-indigo); font-size: 10px; }
 
-    .sec-icon { color: var(--accent); font-size: 12px; }
-
-    /* ── Input row ─────────────────────────────────────────── */
     .row {
       display: flex;
       gap: 12px;
@@ -222,34 +215,30 @@
     .field { display: flex; flex-direction: column; gap: 5px; flex: 1; }
 
     .field label {
-      font-size: 11px;
+      font-family: var(--font-mono);
+      font-size: 10px;
       letter-spacing: 1.5px;
       color: var(--text-dim);
-      font-weight: 600;
+      font-weight: 400;
     }
 
-    /* ── Number input ──────────────────────────────────────── */
     input[type="number"] {
       width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-bright);
+      background: var(--forge-surface);
+      border: 1px solid rgba(99, 102, 241, 0.30);
+      color: var(--forge-text);
       font-family: var(--font-mono);
       font-size: 15px;
       padding: 8px 12px;
       outline: none;
       border-radius: 0;
-      transition: border-color .15s, box-shadow .15s;
+      transition: border-color .15s;
       -moz-appearance: textfield;
     }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent-20);
-    }
+    input[type="number"]:focus { border-color: var(--forge-indigo); }
 
-    /* ── Color swatches ────────────────────────────────────── */
     .swatches {
       display: flex;
       gap: 10px;
@@ -258,20 +247,14 @@
     }
 
     .swatch {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
+      width: 28px;
+      height: 28px;
       cursor: pointer;
       border: 2px solid transparent;
-      outline: 2px solid transparent;
       transition: transform .15s, border-color .15s, box-shadow .15s;
-      position: relative;
     }
 
-    .swatch:hover {
-      transform: scale(1.15);
-      border-color: rgba(255,255,255,.45);
-    }
+    .swatch:hover { transform: scale(1.15); border-color: rgba(255,255,255,.45); }
 
     .swatch.selected {
       border-color: #fff;
@@ -279,7 +262,6 @@
       transform: scale(1.1);
     }
 
-    /* ── Slider ────────────────────────────────────────────── */
     .slider-row {
       display: flex;
       align-items: center;
@@ -288,10 +270,11 @@
     }
 
     .slider-row label {
-      font-size: 11px;
+      font-family: var(--font-mono);
+      font-size: 10px;
       letter-spacing: 1.5px;
       color: var(--text-dim);
-      font-weight: 600;
+      font-weight: 400;
       white-space: nowrap;
       width: 135px;
       flex-shrink: 0;
@@ -300,7 +283,7 @@
     .slider-row input[type="range"] {
       -webkit-appearance: none;
       flex: 1;
-      height: 3px;
+      height: 2px;
       background: var(--surface3);
       border-radius: 0;
       outline: none;
@@ -308,32 +291,29 @@
     }
     .slider-row input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 13px; height: 13px;
-      background: var(--accent);
+      width: 11px; height: 11px;
+      background: var(--forge-indigo);
       border-radius: 0;
-      box-shadow: 0 0 6px var(--accent-glow);
       cursor: pointer;
       transition: transform .1s;
     }
     .slider-row input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
     .slider-row input[type="range"]::-moz-range-thumb {
-      width: 13px; height: 13px;
-      background: var(--accent);
+      width: 11px; height: 11px;
+      background: var(--forge-indigo);
       border: none; border-radius: 0;
-      box-shadow: 0 0 6px var(--accent-glow);
       cursor: pointer;
     }
 
     .slider-val {
       font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--accent);
+      font-size: 12px;
+      color: var(--forge-indigo);
       width: 38px;
       text-align: right;
       flex-shrink: 0;
     }
 
-    /* ── Checkbox ──────────────────────────────────────────── */
     .cb-label {
       display: flex;
       align-items: center;
@@ -349,7 +329,7 @@
     .cb-label input[type="checkbox"] { display: none; }
 
     .cb-box {
-      width: 18px; height: 18px;
+      width: 16px; height: 16px;
       border: 1px solid var(--border-hi);
       background: var(--surface2);
       display: grid;
@@ -359,15 +339,15 @@
     }
 
     .cb-label input:checked + .cb-box {
-      border-color: var(--accent);
-      background: var(--accent-08);
+      border-color: var(--forge-indigo);
+      background: rgba(99,102,241,0.12);
     }
 
     .cb-box::after {
       content: '';
-      width: 9px; height: 5px;
-      border-left: 2px solid var(--accent);
-      border-bottom: 2px solid var(--accent);
+      width: 8px; height: 4px;
+      border-left: 2px solid var(--forge-indigo);
+      border-bottom: 2px solid var(--forge-indigo);
       transform: rotate(-45deg) translateY(-1px);
       opacity: 0;
       transition: opacity .15s;
@@ -375,38 +355,39 @@
 
     .cb-label input:checked + .cb-box::after { opacity: 1; }
 
-    /* ── Drop zone (BG Remove tab) ────────────────────────── */
     .drop-zone {
-      border: 2px dashed var(--border-hi);
+      border: 1px dashed rgba(99,102,241,0.35);
       padding: 28px 20px;
       text-align: center;
       cursor: pointer;
       transition: border-color .15s, background .15s;
       margin-bottom: 12px;
       position: relative;
+      background: rgba(15,17,32,0.50);
     }
 
     .drop-zone:hover,
     .drop-zone.drag-over {
-      border-color: var(--accent);
-      background: var(--accent-08);
+      border-color: var(--forge-indigo);
+      background: rgba(99,102,241,0.06);
     }
 
     .drop-icon {
-      font-size: 28px;
+      font-size: 24px;
       display: block;
       margin-bottom: 10px;
-      opacity: .5;
+      opacity: .4;
+      color: var(--forge-indigo);
     }
 
     .drop-zone p {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text);
       margin-bottom: 4px;
     }
 
-    .drop-sub  { font-size: 12px !important; color: var(--text-dim) !important; font-weight: 400 !important; }
+    .drop-sub  { font-size: 11px !important; color: var(--text-dim) !important; font-weight: 400 !important; }
     .drop-fmts { font-family: var(--font-mono); font-size: 10px !important;
                  color: var(--text-dim) !important; font-weight: 400 !important;
                  margin-top: 8px !important; letter-spacing: 1px; }
@@ -415,12 +396,12 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 7px 12px;
       background: var(--surface2);
       border: 1px solid var(--border);
       margin-bottom: 14px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text);
     }
 
@@ -432,23 +413,24 @@
       border: none;
       color: var(--text-dim);
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       padding: 0 4px;
       line-height: 1;
       transition: color .15s;
     }
-    .bg-clear-btn:hover { color: #ff4040; }
+    .bg-clear-btn:hover { color: #ef4444; }
 
     .bg-first-run-note {
-      font-size: 11px;
+      font-family: var(--font-mono);
+      font-size: 10px;
       color: var(--text-dim);
-      line-height: 1.6;
+      line-height: 1.7;
       margin-bottom: 16px;
       padding: 10px 12px;
-      border-left: 2px solid var(--border-hi);
+      border-left: 2px solid rgba(99,102,241,0.30);
+      background: rgba(99,102,241,0.04);
     }
 
-    /* ── Before / After compare (preview panel) ───────────── */
     .bg-compare {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -458,59 +440,44 @@
     .compare-col { display: flex; flex-direction: column; gap: 6px; }
 
     .compare-label {
-      font-size: 10px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 9px;
       letter-spacing: 2px;
       color: var(--text-dim);
     }
 
-    /* ── Pattern sub-controls ──────────────────────────────── */
     .pattern-opts {
       padding: 12px 14px;
       border: 1px solid var(--border);
-      background: var(--surface2);
+      background: rgba(17,24,39,0.60);
       margin-bottom: 16px;
       display: none;
     }
     .pattern-opts.visible { display: block; }
 
-    /* ── Generate button ───────────────────────────────────── */
     .btn-generate {
       width: 100%;
       margin-top: 8px;
-      padding: 14px 0;
-      background: transparent;
-      border: 1px solid var(--accent);
-      color: var(--accent);
+      padding: 13px 0;
+      background: var(--forge-ember);
+      border: none;
+      color: #0a0b12;
       font-family: var(--font-ui);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 3.5px;
+      letter-spacing: 3px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: background .15s, box-shadow .15s, transform .08s;
+      transition: filter .15s, transform .08s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
     }
 
-    .btn-generate::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: var(--accent);
-      opacity: 0;
-      transition: opacity .15s;
-    }
-
-    .btn-generate:hover::before { opacity: .08; }
-    .btn-generate:hover { box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-generate:hover { filter: brightness(1.12); }
     .btn-generate:active { transform: scale(.985); }
-
     .btn-generate .btn-label { position: relative; z-index: 1; }
 
-    .btn-generate.loading {
-      pointer-events: none;
-      opacity: .6;
-    }
+    .btn-generate.loading { pointer-events: none; opacity: .7; }
 
     .btn-generate.loading .btn-label::after {
       content: '';
@@ -525,27 +492,31 @@
       100% { content: '...'; }
     }
 
-    /* ── Small action button (download icon) ───────────────── */
+    .btn-generate:disabled {
+      background: #3a2a18;
+      color: #5a4030;
+      cursor: not-allowed;
+      filter: none;
+    }
+
     .btn-sm {
       background: transparent;
-      border: 1px solid var(--border-hi);
-      color: var(--text-dim);
+      border: 1px solid rgba(99,102,241,0.35);
+      color: var(--forge-text);
       font-family: var(--font-ui);
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 700;
       letter-spacing: 1.5px;
       padding: 6px 14px;
       cursor: pointer;
-      transition: border-color .15s, color .15s, box-shadow .15s;
+      transition: border-color .15s, color .15s, background .15s;
     }
     .btn-sm:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
+      border-color: var(--forge-indigo);
+      color: var(--forge-indigo);
+      background: rgba(99,102,241,0.07);
     }
 
-    /* ══════════════════════════════════════════════════════════
-       PREVIEW PANEL (right)
-    ══════════════════════════════════════════════════════════ */
     .preview-panel {
       display: flex;
       flex-direction: column;
@@ -560,22 +531,22 @@
     }
 
     .preview-header h2 {
-      font-size: 11px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
       letter-spacing: 3px;
       color: var(--text-dim);
     }
 
-    /* Checkerboard background — shows PNG transparency clearly */
     .canvas-bg {
-      background-color: #0d0f18;
+      background-color: #0a0c18;
       background-image:
-        linear-gradient(45deg, #141726 25%, transparent 25%),
-        linear-gradient(-45deg, #141726 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #141726 75%),
-        linear-gradient(-45deg, transparent 75%, #141726 75%);
-      background-size: 18px 18px;
-      background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+        linear-gradient(45deg, #10122a 25%, transparent 25%),
+        linear-gradient(-45deg, #10122a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #10122a 75%),
+        linear-gradient(-45deg, transparent 75%, #10122a 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
       border: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -583,6 +554,7 @@
       min-height: 260px;
       position: relative;
       overflow: hidden;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
     }
 
     .canvas-bg img {
@@ -592,27 +564,16 @@
       display: block;
     }
 
-    /* ── Frame preview ─────────────────────────────────────── */
     #frame-preview-wrap { display: none; }
+    #btn-preview-wrap   { display: none; }
 
-    /* ── Button preview ────────────────────────────────────── */
-    #btn-preview-wrap { display: none; }
+    .btn-states { display: flex; flex-direction: column; gap: 18px; }
 
-    .btn-states {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .btn-state-row {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
+    .btn-state-row { display: flex; align-items: center; gap: 18px; }
 
     .btn-state-label {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 1.5px;
       color: var(--text-dim);
       width: 70px;
@@ -622,14 +583,14 @@
 
     .btn-state-canvas {
       flex: 1;
-      background-color: #0d0f18;
+      background-color: #0a0c18;
       background-image:
-        linear-gradient(45deg, #141726 25%, transparent 25%),
-        linear-gradient(-45deg, #141726 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #141726 75%),
-        linear-gradient(-45deg, transparent 75%, #141726 75%);
-      background-size: 14px 14px;
-      background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+        linear-gradient(45deg, #10122a 25%, transparent 25%),
+        linear-gradient(-45deg, #10122a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #10122a 75%),
+        linear-gradient(-45deg, transparent 75%, #10122a 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0;
       border: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -645,7 +606,6 @@
       display: block;
     }
 
-    /* ── Placeholder (before first generation) ─────────────── */
     .placeholder {
       display: flex;
       flex-direction: column;
@@ -655,18 +615,15 @@
       color: var(--text-dim);
     }
 
-    .placeholder-icon {
-      font-size: 48px;
-      opacity: .3;
-    }
+    .placeholder-icon { font-size: 40px; opacity: .2; color: var(--forge-indigo); }
 
     .placeholder p {
-      font-size: 13px;
+      font-family: var(--font-mono);
+      font-size: 11px;
       letter-spacing: 1px;
       text-align: center;
     }
 
-    /* ── Download row ──────────────────────────────────────── */
     .dl-row {
       display: flex;
       gap: 10px;
@@ -676,25 +633,22 @@
 
     .dl-filename {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
       letter-spacing: .5px;
       flex: 1;
     }
 
-    /* ══════════════════════════════════════════════════════════
-       TOAST NOTIFICATION
-    ══════════════════════════════════════════════════════════ */
     #toast {
       position: fixed;
       bottom: 28px;
       right: 28px;
-      padding: 12px 20px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 11px 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
       letter-spacing: 1px;
       border: 1px solid transparent;
-      background: var(--surface);
+      background: var(--forge-surface);
       color: var(--text);
       opacity: 0;
       transform: translateY(12px);
@@ -702,71 +656,62 @@
       pointer-events: none;
       z-index: 999;
       max-width: 340px;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
     }
 
-    #toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    #toast.show     { opacity: 1; transform: translateY(0); }
+    #toast.success  { border-color: var(--forge-green); color: var(--forge-green); }
+    #toast.error    { border-color: #ef4444; color: #ef4444; }
+    #toast.info     { border-color: var(--forge-indigo); color: var(--forge-indigo); }
 
-    #toast.success { border-color: #20c050; color: #20c050; }
-    #toast.error   { border-color: #ff4040; color: #ff4040; }
-    #toast.info    { border-color: var(--accent); color: var(--accent); }
-
-    /* ══════════════════════════════════════════════════════════
-       FOOTER
-    ══════════════════════════════════════════════════════════ */
     footer {
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
       font-family: var(--font-mono);
       font-size: 10px;
       color: var(--text-dim);
-      padding: 16px;
+      padding: 12px 28px;
       border-top: 1px solid var(--border);
       letter-spacing: 1px;
     }
 
-    /* ══════════════════════════════════════════════════════════
-       CONVERT TAB
-    ══════════════════════════════════════════════════════════ */
+    footer a { color: rgba(99,102,241,0.65); text-decoration: none; transition: color .15s; }
+    footer a:hover { color: var(--forge-indigo); }
 
-    /* ── Format toggle buttons ─────────────────────────────── */
     .fmt-btns {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       margin-bottom: 14px;
     }
 
     .fmt-btn {
-      padding: 7px 14px;
+      padding: 6px 12px;
       background: var(--surface2);
-      border: 1px solid var(--border-hi);
+      border: 1px solid rgba(99,102,241,0.20);
       color: var(--text-dim);
       font-family: var(--font-ui);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 1.5px;
       cursor: pointer;
       transition: border-color .15s, color .15s, background .15s;
     }
 
-    .fmt-btn:hover {
-      border-color: var(--accent);
-      color: var(--text);
-    }
+    .fmt-btn:hover { border-color: rgba(99,102,241,0.50); color: var(--forge-text); }
 
     .fmt-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-08);
+      border-color: var(--forge-indigo);
+      color: var(--forge-indigo);
+      background: rgba(99,102,241,0.10);
     }
 
-    /* ── Convert file list ─────────────────────────────────── */
     .conv-file-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       max-height: 400px;
       overflow-y: auto;
     }
@@ -775,11 +720,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 7px 12px;
       background: var(--surface2);
       border: 1px solid var(--border);
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text);
       min-width: 0;
     }
@@ -792,63 +737,38 @@
       min-width: 0;
     }
 
-    .conv-file-status {
-      flex-shrink: 0;
-      font-size: 11px;
-      letter-spacing: 1px;
-      font-weight: 700;
-    }
-
+    .conv-file-status { flex-shrink: 0; font-size: 10px; letter-spacing: 1px; font-weight: 700; }
     .conv-file-status.pending  { color: var(--text-dim); }
-    .conv-file-status.done     { color: #20c050; }
-    .conv-file-status.error    { color: #ff4040; }
+    .conv-file-status.done     { color: var(--forge-green); }
+    .conv-file-status.error    { color: #ef4444; }
   </style>
 </head>
 
 <body>
 
-<!-- ══════════════════════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════════════════════ -->
-<header>
-  <div class="logo">◈</div>
-  <div class="header-title">
-    <h1>PIXELFORGE</h1>
-    <span>CMG Forge — Game UI Asset Toolkit</span>
-  </div>
-  <span class="header-badge">CMG FORGE</span>
-</header>
+<nav class="navbar">
+  <a href="https://cmgforge.com" class="nav-logo">CMG FORGE</a>
+  <div class="nav-divider"></div>
+  <span class="nav-tool">PIXELFORGE</span>
+  <a href="https://cmgforge.com/tools" class="nav-all-tools">ALL TOOLS</a>
+</nav>
 
-<!-- ══════════════════════════════════════════════════════════
-     MAIN
-══════════════════════════════════════════════════════════ -->
 <main>
 
-  <!-- ────────── CONTROLS PANEL ────────── -->
   <aside class="controls-panel">
 
-    <!-- Mode tabs -->
     <div class="tabs">
-      <button class="tab active" data-mode="frame" onclick="switchMode('frame')">
-        ⬜ FRAME
-      </button>
-      <button class="tab" data-mode="button" onclick="switchMode('button')">
-        ⬛ BUTTON
-      </button>
-      <button class="tab" data-mode="bgremove" onclick="switchMode('bgremove')">
-        ✂ BG REMOVE
-      </button>
-      <button class="tab" data-mode="convert" onclick="switchMode('convert')">
-        ⇄ CONVERT
-      </button>
+      <button class="tab active" data-mode="frame" onclick="switchMode('frame')">⬜ FRAME</button>
+      <button class="tab" data-mode="button" onclick="switchMode('button')">⬛ BUTTON</button>
+      <button class="tab" data-mode="bgremove" onclick="switchMode('bgremove')">✂ BG REMOVE</button>
+      <button class="tab" data-mode="convert" onclick="switchMode('convert')">⇄ CONVERT</button>
     </div>
 
     <div class="controls-body">
 
-      <!-- ══════════════ FRAME MODE ══════════════ -->
+      <!-- FRAME MODE -->
       <div id="frame-section" class="mode-section active">
 
-        <!-- Dimensions -->
         <div class="sec"><span class="sec-icon">◆</span> DIMENSIONS <div class="sec-line"></div></div>
         <div class="row">
           <div class="field">
@@ -861,7 +781,6 @@
           </div>
         </div>
 
-        <!-- Color -->
         <div class="sec"><span class="sec-icon">◆</span> COLOR <div class="sec-line"></div></div>
         <div class="swatches" id="f-swatches">
           <div class="swatch selected" data-color="blue"   style="background:#0096ff" title="Blue"   onclick="selectColor('blue',   this, 'f-swatches')"></div>
@@ -872,7 +791,6 @@
           <div class="swatch"          data-color="cyan"   style="background:#00dcff" title="Cyan"   onclick="selectColor('cyan',   this, 'f-swatches')"></div>
         </div>
 
-        <!-- Border -->
         <div class="sec"><span class="sec-icon">◆</span> BORDER <div class="sec-line"></div></div>
         <div class="slider-row">
           <label>THICKNESS</label>
@@ -881,7 +799,6 @@
           <span class="slider-val" id="f-border-val">3px</span>
         </div>
 
-        <!-- Rounded Corners -->
         <div class="sec"><span class="sec-icon">◆</span> CORNERS <div class="sec-line"></div></div>
         <label class="cb-label">
           <input type="checkbox" id="f-rounded" onchange="toggleRoundedOpts(this)" />
@@ -898,7 +815,6 @@
           </div>
         </div>
 
-        <!-- Pattern -->
         <div class="sec"><span class="sec-icon">◆</span> FILL PATTERN <div class="sec-line"></div></div>
         <label class="cb-label">
           <input type="checkbox" id="f-pattern" onchange="togglePatternOpts(this)" />
@@ -921,18 +837,15 @@
           </div>
         </div>
 
-        <!-- Action -->
         <button class="btn-generate" id="f-gen-btn" onclick="generateFrame()">
           <span class="btn-label">⚡ GENERATE &amp; DOWNLOAD</span>
         </button>
 
       </div><!-- /frame-section -->
 
-
-      <!-- ══════════════ BUTTON MODE ══════════════ -->
+      <!-- BUTTON MODE -->
       <div id="button-section" class="mode-section">
 
-        <!-- Dimensions -->
         <div class="sec"><span class="sec-icon">◆</span> DIMENSIONS <div class="sec-line"></div></div>
         <div class="row">
           <div class="field">
@@ -945,7 +858,6 @@
           </div>
         </div>
 
-        <!-- Color -->
         <div class="sec"><span class="sec-icon">◆</span> COLOR <div class="sec-line"></div></div>
         <div class="swatches" id="b-swatches">
           <div class="swatch selected" data-color="blue"   style="background:#0096ff" title="Blue"   onclick="selectColor('blue',   this, 'b-swatches')"></div>
@@ -956,7 +868,6 @@
           <div class="swatch"          data-color="cyan"   style="background:#00dcff" title="Cyan"   onclick="selectColor('cyan',   this, 'b-swatches')"></div>
         </div>
 
-        <!-- Border -->
         <div class="sec"><span class="sec-icon">◆</span> BORDER <div class="sec-line"></div></div>
         <div class="slider-row">
           <label>THICKNESS</label>
@@ -965,27 +876,21 @@
           <span class="slider-val" id="b-border-val">2px</span>
         </div>
 
-        <!-- About states -->
         <div class="sec"><span class="sec-icon">◆</span> OUTPUT STATES <div class="sec-line"></div></div>
-        <div style="font-size:13px; color:var(--text-dim); line-height:1.8; margin-bottom:16px;">
-          Generates <strong style="color:var(--text)">3 PNG files</strong> in a ZIP:<br/>
-          <span style="font-family:var(--font-mono); font-size:11px;">
-            btn_normal · btn_hovered · btn_clicked
-          </span>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.8;margin-bottom:16px;">
+          Generates <strong style="color:var(--forge-text)">3 PNG files</strong> in a ZIP:<br/>
+          btn_normal &nbsp;&middot;&nbsp; btn_hovered &nbsp;&middot;&nbsp; btn_clicked
         </div>
 
-        <!-- Action -->
         <button class="btn-generate" id="b-gen-btn" onclick="generateButtons()">
           <span class="btn-label">⚡ GENERATE &amp; DOWNLOAD ZIP</span>
         </button>
 
       </div><!-- /button-section -->
 
-
-      <!-- ══════════════ BG REMOVE MODE ══════════════ -->
+      <!-- BG REMOVE MODE -->
       <div id="bgremove-section" class="mode-section">
 
-        <!-- Upload -->
         <div class="sec"><span class="sec-icon">◆</span> UPLOAD IMAGE <div class="sec-line"></div></div>
 
         <div class="drop-zone" id="drop-zone">
@@ -994,7 +899,8 @@
           <p class="drop-sub">or click to browse</p>
           <p class="drop-fmts">PNG · JPG · WEBP · BMP &nbsp;—&nbsp; max 15 MB</p>
           <input type="file" id="bg-file-input"
-                 accept="image/png,image/jpeg,image/webp,image/bmp" />
+                 accept="image/png,image/jpeg,image/webp,image/bmp"
+                 style="display:none;" />
         </div>
 
         <div class="bg-selected hidden" id="bg-selected">
@@ -1002,24 +908,20 @@
           <button class="bg-clear-btn" onclick="clearBgFile()" title="Remove">✕</button>
         </div>
 
-        <!-- First-run note -->
         <div class="bg-first-run-note">
           First use only: the AI model (~170 MB) downloads automatically
           and caches to <code>~/.u2net/</code>. All runs after that are instant.
         </div>
 
-        <!-- Action -->
         <button class="btn-generate" id="bg-gen-btn" onclick="removeBackground()" disabled>
           <span class="btn-label">✂ REMOVE BACKGROUND</span>
         </button>
 
       </div><!-- /bgremove-section -->
 
-
-      <!-- ══════════════ CONVERT MODE ══════════════ -->
+      <!-- CONVERT MODE -->
       <div id="convert-section" class="mode-section">
 
-        <!-- Upload -->
         <div class="sec"><span class="sec-icon">◆</span> UPLOAD FILES <div class="sec-line"></div></div>
 
         <div class="drop-zone" id="conv-drop-zone">
@@ -1029,7 +931,7 @@
           <p class="drop-fmts">PNG · JPG · WEBP · BMP · TIFF · ICO &nbsp;—&nbsp; max 50 MB total</p>
           <input type="file" id="conv-file-input"
                  accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff,image/x-icon"
-                 multiple />
+                 multiple style="display:none;" />
         </div>
 
         <div class="bg-selected hidden" id="conv-selected">
@@ -1037,7 +939,6 @@
           <button class="bg-clear-btn" onclick="clearConvFiles()" title="Remove">✕</button>
         </div>
 
-        <!-- Output Format -->
         <div class="sec"><span class="sec-icon">◆</span> OUTPUT FORMAT <div class="sec-line"></div></div>
         <div class="fmt-btns">
           <button class="fmt-btn active" data-fmt="PNG"  onclick="selectFmt('PNG',  this)">PNG</button>
@@ -1048,7 +949,6 @@
           <button class="fmt-btn"        data-fmt="ICO"  onclick="selectFmt('ICO',  this)">ICO</button>
         </div>
 
-        <!-- JPEG Quality (shown only when JPG selected) -->
         <div id="conv-quality-wrap" style="display:none;">
           <div class="sec"><span class="sec-icon">◆</span> JPEG QUALITY <div class="sec-line"></div></div>
           <div class="slider-row">
@@ -1059,12 +959,10 @@
           </div>
         </div>
 
-        <!-- Action -->
         <button class="btn-generate" id="conv-btn" onclick="convertFiles()" disabled>
           <span class="btn-label">⚡ CONVERT &amp; DOWNLOAD</span>
         </button>
 
-        <!-- ── Video Convert ────────────────────────────────── -->
         <div style="margin: 28px -24px 0; border-top: 1px solid var(--border);"></div>
 
         <div class="sec" style="margin-top:20px;"><span class="sec-icon">◆</span> VIDEO CONVERT <div class="sec-line"></div></div>
@@ -1075,7 +973,8 @@
           <p class="drop-sub">or click to browse</p>
           <p class="drop-fmts">MP4 · MKV · AVI · MOV · WEBM · FLV · WMV · M4V · MPEG · 3GP</p>
           <input type="file" id="vid-file-input"
-                 accept="video/mp4,video/x-matroska,video/avi,video/quicktime,video/webm,video/x-flv,video/x-ms-wmv,video/x-m4v,video/mpeg,.mkv,.avi,.flv,.wmv,.m4v,.ts,.3gp" />
+                 accept="video/mp4,video/x-matroska,video/avi,video/quicktime,video/webm,video/x-flv,video/x-ms-wmv,video/x-m4v,video/mpeg,.mkv,.avi,.flv,.wmv,.m4v,.ts,.3gp"
+                 style="display:none;" />
         </div>
 
         <div class="bg-selected hidden" id="vid-selected">
@@ -1083,14 +982,12 @@
           <button class="bg-clear-btn" onclick="clearVidFile()" title="Remove">✕</button>
         </div>
 
-        <!-- Output type -->
         <div class="sec"><span class="sec-icon">◆</span> OUTPUT TYPE <div class="sec-line"></div></div>
         <div class="fmt-btns">
           <button class="fmt-btn active" data-vfmt="MP3" onclick="selectVideoFmt('MP3', this)">▶ MP3 (audio)</button>
           <button class="fmt-btn"        data-vfmt="GIF" onclick="selectVideoFmt('GIF', this)">◎ GIF (animation)</button>
         </div>
 
-        <!-- MP3 options -->
         <div id="vid-mp3-opts">
           <div class="sec"><span class="sec-icon">◆</span> BITRATE <div class="sec-line"></div></div>
           <div class="fmt-btns" id="vid-bitrate-btns">
@@ -1101,7 +998,6 @@
           </div>
         </div>
 
-        <!-- GIF options -->
         <div id="vid-gif-opts" style="display:none;">
           <div class="sec"><span class="sec-icon">◆</span> GIF OPTIONS <div class="sec-line"></div></div>
           <div class="slider-row">
@@ -1118,15 +1014,11 @@
           </div>
         </div>
 
-        <!-- ffmpeg note -->
         <div class="bg-first-run-note">
           Requires <strong>ffmpeg</strong> installed and available in your system PATH.<br/>
-          <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:1px;">
-            winget install ffmpeg &nbsp;·&nbsp; brew install ffmpeg &nbsp;·&nbsp; apt install ffmpeg
-          </span>
+          winget install ffmpeg &nbsp;&middot;&nbsp; brew install ffmpeg &nbsp;&middot;&nbsp; apt install ffmpeg
         </div>
 
-        <!-- Action -->
         <button class="btn-generate" id="vid-btn" onclick="convertVideo()" disabled>
           <span class="btn-label">⚡ CONVERT VIDEO</span>
         </button>
@@ -1136,21 +1028,18 @@
     </div><!-- /controls-body -->
   </aside>
 
-
-  <!-- ────────── PREVIEW PANEL ────────── -->
   <section class="preview-panel">
 
     <div class="preview-header">
       <h2>◈ PREVIEW</h2>
-      <span id="preview-dim" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)"></span>
+      <span id="preview-dim" style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)"></span>
     </div>
 
-    <!-- Frame preview -->
     <div id="frame-preview-wrap">
       <div class="canvas-bg" id="frame-canvas">
         <div class="placeholder">
           <div class="placeholder-icon">⬜</div>
-          <p>Click "Generate &amp; Download" to render your frame</p>
+          <p>Configure and hit Generate to render your frame.</p>
         </div>
       </div>
       <div class="dl-row" id="frame-dl-row" style="margin-top:14px; display:none;">
@@ -1159,58 +1048,45 @@
       </div>
     </div>
 
-    <!-- Button preview -->
     <div id="btn-preview-wrap">
       <div class="btn-states" id="btn-states-container">
         <div class="btn-state-row">
           <span class="btn-state-label">NORMAL</span>
           <div class="btn-state-canvas" id="canvas-normal">
-            <div class="placeholder" style="padding:20px">
-              <p style="font-size:11px">Not generated yet</p>
-            </div>
+            <div class="placeholder" style="padding:20px"><p>Not generated yet</p></div>
           </div>
         </div>
         <div class="btn-state-row">
           <span class="btn-state-label">HOVERED</span>
           <div class="btn-state-canvas" id="canvas-hovered">
-            <div class="placeholder" style="padding:20px">
-              <p style="font-size:11px">Not generated yet</p>
-            </div>
+            <div class="placeholder" style="padding:20px"><p>Not generated yet</p></div>
           </div>
         </div>
         <div class="btn-state-row">
           <span class="btn-state-label">CLICKED</span>
           <div class="btn-state-canvas" id="canvas-clicked">
-            <div class="placeholder" style="padding:20px">
-              <p style="font-size:11px">Not generated yet</p>
-            </div>
+            <div class="placeholder" style="padding:20px"><p>Not generated yet</p></div>
           </div>
         </div>
       </div>
-
       <div class="dl-row" id="btn-dl-row" style="margin-top:18px; display:none;">
         <span class="dl-filename" id="btn-filename"></span>
         <button class="btn-sm" onclick="reDownloadZip()">↓ DOWNLOAD ALL (ZIP)</button>
       </div>
     </div>
 
-    <!-- BG Remove preview -->
     <div id="bg-preview-wrap" style="display:none;">
       <div class="bg-compare">
         <div class="compare-col">
           <span class="compare-label">ORIGINAL</span>
           <div class="canvas-bg" id="bg-before-canvas">
-            <div class="placeholder" style="padding:30px 20px;">
-              <p style="font-size:12px;">Upload an image</p>
-            </div>
+            <div class="placeholder" style="padding:30px 20px;"><p>Upload an image</p></div>
           </div>
         </div>
         <div class="compare-col">
           <span class="compare-label">RESULT</span>
           <div class="canvas-bg" id="bg-after-canvas">
-            <div class="placeholder" style="padding:30px 20px;">
-              <p style="font-size:12px;">Result appears here</p>
-            </div>
+            <div class="placeholder" style="padding:30px 20px;"><p>Result appears here</p></div>
           </div>
         </div>
       </div>
@@ -1220,7 +1096,6 @@
       </div>
     </div>
 
-    <!-- Image convert preview -->
     <div id="conv-preview-wrap" style="display:none;">
       <div class="conv-file-list" id="conv-file-list"></div>
       <div class="dl-row" id="conv-dl-row" style="margin-top:14px; display:none;">
@@ -1229,12 +1104,11 @@
       </div>
     </div>
 
-    <!-- Video convert preview -->
     <div id="vid-preview-wrap" style="display:none;">
       <div id="vid-result-area">
         <div class="placeholder" id="vid-empty-msg" style="padding:30px 20px;">
-          <div class="placeholder-icon" style="font-size:36px; opacity:.25;">▶</div>
-          <p style="font-size:12px;">Drop a video on the left,<br/>then hit Convert Video</p>
+          <div class="placeholder-icon" style="font-size:32px; opacity:.2;">▶</div>
+          <p>Drop a video on the left, then hit Convert Video.</p>
         </div>
       </div>
       <div class="dl-row" id="vid-dl-row" style="margin-top:14px; display:none;">
@@ -1243,10 +1117,9 @@
       </div>
     </div>
 
-    <!-- Shared empty state (before any mode is rendered) -->
     <div id="welcome-placeholder" class="placeholder">
       <div class="placeholder-icon">◈</div>
-      <p>Select a mode, configure your asset,<br/>then hit Generate.</p>
+      <p>Select a mode, configure your asset, then hit Generate.</p>
     </div>
 
   </section>
@@ -1254,28 +1127,21 @@
 </main>
 
 <footer>
-  CMG Forge &nbsp;·&nbsp; PixelForge &nbsp;·&nbsp; Game UI Asset Toolkit &nbsp;·&nbsp; Procedurally Rendered &nbsp;·&nbsp; No External Images
+  <span>&copy; CMG Forge. Free, forever.</span>
+  <a href="https://cmgforge.com">cmgforge.com</a>
 </footer>
 
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- ══════════════════════════════════════════════════════════
-     JAVASCRIPT
-══════════════════════════════════════════════════════════ -->
 <script>
-  /* ── State ─────────────────────────────────────────────── */
   let currentMode   = 'frame';
   let frameColor    = 'blue';
   let buttonColor   = 'blue';
-  let lastFrameBlob = null;    // for re-download without re-render
+  let lastFrameBlob = null;
   let lastZipBlob   = null;
+  let bgFile        = null;
+  let bgResultUrl   = null;
 
-  // BG Remove state
-  let bgFile       = null;     // currently selected File object
-  let bgResultUrl  = null;     // blob URL of last processed result
-
-  /* Palette accent CSS values (match Python PALETTE) */
   const ACCENT_HEX = {
     blue:   '#0096ff',
     pink:   '#ff50b4',
@@ -1285,7 +1151,6 @@
     cyan:   '#00dcff',
   };
 
-  /* Accent rgba helpers (alpha 0-255 → 0-1) */
   const ACCENT_RGBA = {
     blue:   'rgba(0,150,255',
     pink:   'rgba(255,80,180',
@@ -1295,50 +1160,35 @@
     cyan:   'rgba(0,220,255',
   };
 
-  /* ── Init ───────────────────────────────────────────────── */
   switchMode('frame');
 
-  /* ── Mode switching ─────────────────────────────────────── */
   function switchMode(mode) {
     currentMode = mode;
-
-    // Tab highlight
     document.querySelectorAll('.tab').forEach(t => {
       t.classList.toggle('active', t.dataset.mode === mode);
     });
-
-    // Control section visibility
     document.getElementById('frame-section').classList.toggle('active',    mode === 'frame');
     document.getElementById('button-section').classList.toggle('active',   mode === 'button');
     document.getElementById('bgremove-section').classList.toggle('active', mode === 'bgremove');
     document.getElementById('convert-section').classList.toggle('active',  mode === 'convert');
-
-    // Preview panel swap
     document.getElementById('frame-preview-wrap').style.display  = mode === 'frame'    ? 'block' : 'none';
     document.getElementById('btn-preview-wrap').style.display    = mode === 'button'   ? 'block' : 'none';
     document.getElementById('bg-preview-wrap').style.display     = mode === 'bgremove' ? 'block' : 'none';
     document.getElementById('conv-preview-wrap').style.display   = mode === 'convert'  ? 'block' : 'none';
     document.getElementById('vid-preview-wrap').style.display    = mode === 'convert'  ? 'block' : 'none';
     document.getElementById('welcome-placeholder').style.display = 'none';
-
-    // BG remove + convert use fixed neutral accent; others use palette color
     if (mode === 'bgremove' || mode === 'convert') {
       applyAccent('blue');
     } else {
-      const col = mode === 'frame' ? frameColor : buttonColor;
-      applyAccent(col);
+      applyAccent(mode === 'frame' ? frameColor : buttonColor);
     }
   }
 
-  /* ── Color selection ────────────────────────────────────── */
   function selectColor(name, el, groupId) {
-    // Deselect all in same group
     document.querySelectorAll(`#${groupId} .swatch`).forEach(s => s.classList.remove('selected'));
     el.classList.add('selected');
-
     if (groupId === 'f-swatches') frameColor  = name;
     else                          buttonColor = name;
-
     applyAccent(name);
   }
 
@@ -1352,28 +1202,13 @@
     root.setProperty('--accent-glow', base + ',0.45)');
   }
 
-  /* ── Slider value display ───────────────────────────────── */
-  function updateVal(id, v, suffix) {
-    document.getElementById(id).textContent = v + suffix;
-  }
+  function updateVal(id, v, suffix) { document.getElementById(id).textContent = v + suffix; }
+  function togglePatternOpts(cb) { document.getElementById('pattern-opts').classList.toggle('visible', cb.checked); }
+  function toggleRoundedOpts(cb) { document.getElementById('rounded-opts').classList.toggle('visible', cb.checked); }
 
-  /* ── Pattern sub-controls toggle ────────────────────────── */
-  function togglePatternOpts(cb) {
-    document.getElementById('pattern-opts').classList.toggle('visible', cb.checked);
-  }
-
-  /* ── Rounded corners sub-controls toggle ────────────────── */
-  function toggleRoundedOpts(cb) {
-    document.getElementById('rounded-opts').classList.toggle('visible', cb.checked);
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     FRAME GENERATION
-  ══════════════════════════════════════════════════════════ */
   async function generateFrame() {
     const btn = document.getElementById('f-gen-btn');
     setLoading(btn, true);
-
     const isRounded = document.getElementById('f-rounded').checked;
     const payload = {
       width:             parseInt(document.getElementById('f-width').value)   || 400,
@@ -1385,48 +1220,26 @@
       pattern_thickness: parseInt(document.getElementById('f-lthick').value)  || 1,
       corner_radius:     isRounded ? (parseInt(document.getElementById('f-radius').value) || 16) : 0,
     };
-
     try {
-      const res = await fetch('/api/frame', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-      const blob   = await res.blob();
+      const blob = await res.blob();
       lastFrameBlob = blob;
-      const url    = URL.createObjectURL(blob);
-
-      // Show in preview
-      const canvas = document.getElementById('frame-canvas');
-      canvas.innerHTML = `<img src="${url}" alt="Generated frame" />`;
-
-      // Update info row
+      const url = URL.createObjectURL(blob);
+      document.getElementById('frame-canvas').innerHTML = `<img src="${url}" alt="Generated frame" />`;
       const suffix   = payload.enable_pattern ? '_pattern' : '';
       const rSuffix  = payload.corner_radius > 0 ? `_r${payload.corner_radius}` : '';
       const filename = `frame_${payload.width}x${payload.height}_${frameColor}${suffix}${rSuffix}.png`;
       document.getElementById('frame-filename').textContent = filename;
-
-      // Show download row
       const dlRow = document.getElementById('frame-dl-row');
       dlRow.style.display = 'flex';
-      dlRow.dataset.url      = url;
+      dlRow.dataset.url = url;
       dlRow.dataset.filename = filename;
-
-      // Preview dimension badge
-      document.getElementById('preview-dim').textContent =
-        `${payload.width} × ${payload.height} px`;
-
-      // Auto-download
+      document.getElementById('preview-dim').textContent = `${payload.width} × ${payload.height} px`;
       triggerDownload(url, filename);
       toast('Frame generated & downloaded ✓', 'success');
-
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(btn, false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(btn, false); }
   }
 
   function reDownloadFrame() {
@@ -1434,78 +1247,41 @@
     if (row.dataset.url) triggerDownload(row.dataset.url, row.dataset.filename);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     BUTTON GENERATION
-  ══════════════════════════════════════════════════════════ */
   async function generateButtons() {
     const btn = document.getElementById('b-gen-btn');
     setLoading(btn, true);
-
     const payload = {
       width:            parseInt(document.getElementById('b-width').value)  || 270,
       height:           parseInt(document.getElementById('b-height').value) || 68,
       color:            buttonColor,
       border_thickness: parseInt(document.getElementById('b-border').value) || 2,
     };
-
     try {
-      // Fetch previews for all 3 states in parallel
-      const states   = ['normal', 'hovered', 'clicked'];
-      const fetchers = states.map(state =>
-        fetch(`/api/button/${state}`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(payload),
-        })
-      );
-
-      const responses = await Promise.all(fetchers);
-      for (const r of responses) {
-        if (!r.ok) throw new Error(`Server error: ${r.status}`);
-      }
-
-      const blobs = await Promise.all(responses.map(r => r.blob()));
-      const urls  = blobs.map(b => URL.createObjectURL(b));
-
-      // Render each state preview
+      const states = ['normal', 'hovered', 'clicked'];
+      const responses = await Promise.all(states.map(state =>
+        fetch(`/api/button/${state}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      ));
+      for (const r of responses) { if (!r.ok) throw new Error(`Server error: ${r.status}`); }
+      const urls = (await Promise.all(responses.map(r => r.blob()))).map(b => URL.createObjectURL(b));
       states.forEach((state, i) => {
-        const canvas = document.getElementById(`canvas-${state}`);
-        canvas.innerHTML = `<img src="${urls[i]}" alt="${state} button" />`;
+        document.getElementById(`canvas-${state}`).innerHTML = `<img src="${urls[i]}" alt="${state} button" />`;
       });
-
-      // Update preview dimension badge
-      document.getElementById('preview-dim').textContent =
-        `${payload.width} × ${payload.height} px`;
-
-      // Now fetch the ZIP for download
-      const zipRes = await fetch('/api/buttons/zip', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
-      });
+      document.getElementById('preview-dim').textContent = `${payload.width} × ${payload.height} px`;
+      const zipRes = await fetch('/api/buttons/zip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!zipRes.ok) throw new Error(`ZIP error: ${zipRes.status}`);
-
       const zipBlob = await zipRes.blob();
-      lastZipBlob   = zipBlob;
+      lastZipBlob = zipBlob;
       const zipUrl  = URL.createObjectURL(zipBlob);
       const zipName = `buttons_${payload.width}x${payload.height}_${buttonColor}.zip`;
-
-      // Show download row
       const dlRow = document.getElementById('btn-dl-row');
-      dlRow.style.display    = 'flex';
-      dlRow.dataset.url      = zipUrl;
+      dlRow.style.display = 'flex';
+      dlRow.dataset.url = zipUrl;
       dlRow.dataset.filename = zipName;
       document.getElementById('btn-filename').textContent = zipName;
-
-      // Auto-download ZIP
       triggerDownload(zipUrl, zipName);
       toast('3 button states generated & ZIP downloaded ✓', 'success');
-
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      setLoading(btn, false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { setLoading(btn, false); }
   }
 
   function reDownloadZip() {
@@ -1513,32 +1289,23 @@
     if (row.dataset.url) triggerDownload(row.dataset.url, row.dataset.filename);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     UTILITIES
-  ══════════════════════════════════════════════════════════ */
   function triggerDownload(url, filename) {
     const a = document.createElement('a');
-    a.href     = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
 
-  function setLoading(btn, state) {
-    btn.classList.toggle('loading', state);
-  }
+  function setLoading(btn, state) { btn.classList.toggle('loading', state); }
 
   let toastTimer = null;
   function toast(msg, type = 'info') {
     const el = document.getElementById('toast');
     el.textContent = msg;
-    el.className   = `show ${type}`;
+    el.className = `show ${type}`;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { el.className = ''; }, 3500);
   }
 
-  /* ── Enter key triggers generate ───────────────────────── */
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.target.matches('button')) {
       if      (currentMode === 'frame')    generateFrame();
@@ -1548,191 +1315,99 @@
     }
   });
 
-  /* ══════════════════════════════════════════════════════════
-     BG REMOVE — drag & drop + file input
-  ══════════════════════════════════════════════════════════ */
   (function initDropZone() {
     const zone  = document.getElementById('drop-zone');
     const input = document.getElementById('bg-file-input');
-
-    // Click anywhere on the zone → open file picker
     zone.addEventListener('click', () => input.click());
-
-    // Drag events
     zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
     zone.addEventListener('dragenter', e  => { e.preventDefault(); });
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      const f = e.dataTransfer.files[0];
-      if (f) setBgFile(f);
-    });
-
-    // File input change
-    input.addEventListener('change', e => {
-      if (e.target.files[0]) setBgFile(e.target.files[0]);
-    });
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) setBgFile(f); });
+    input.addEventListener('change', e => { if (e.target.files[0]) setBgFile(e.target.files[0]); });
   })();
 
-  /* ── Set the active file + instant original preview ─────── */
   function setBgFile(file) {
     const ALLOWED = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp'];
-    if (!ALLOWED.includes(file.type)) {
-      toast('Unsupported format. Use PNG, JPG, WEBP or BMP.', 'error');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      toast('File too large. Maximum is 15 MB.', 'error');
-      return;
-    }
-
+    if (!ALLOWED.includes(file.type)) { toast('Unsupported format. Use PNG, JPG, WEBP or BMP.', 'error'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast('File too large. Maximum is 15 MB.', 'error'); return; }
     bgFile = file;
-
-    // Show file name chip
     document.getElementById('bg-selected-name').textContent = file.name;
     document.getElementById('bg-selected').classList.remove('hidden');
-
-    // Preview original immediately (no server round-trip needed)
     const url = URL.createObjectURL(file);
-    document.getElementById('bg-before-canvas').innerHTML =
-      `<img src="${url}" alt="Original" style="max-width:100%;max-height:280px;object-fit:contain;" />`;
-
-    // Reset result panel
-    document.getElementById('bg-after-canvas').innerHTML =
-      `<div class="placeholder" style="padding:30px 20px;"><p style="font-size:12px;">Click Remove Background</p></div>`;
+    document.getElementById('bg-before-canvas').innerHTML = `<img src="${url}" alt="Original" style="max-width:100%;max-height:280px;object-fit:contain;" />`;
+    document.getElementById('bg-after-canvas').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><p>Click Remove Background</p></div>`;
     document.getElementById('bg-dl-row').style.display = 'none';
     bgResultUrl = null;
-
-    // Enable the action button
     document.getElementById('bg-gen-btn').disabled = false;
-
-    // Switch to BG Remove tab if not already there
     if (currentMode !== 'bgremove') switchMode('bgremove');
   }
 
-  /* ── Clear selected file ────────────────────────────────── */
   function clearBgFile() {
-    bgFile = null;
-    bgResultUrl = null;
+    bgFile = null; bgResultUrl = null;
     document.getElementById('bg-file-input').value = '';
     document.getElementById('bg-selected').classList.add('hidden');
     document.getElementById('bg-gen-btn').disabled = true;
-    document.getElementById('bg-before-canvas').innerHTML =
-      `<div class="placeholder" style="padding:30px 20px;"><p style="font-size:12px;">Upload an image</p></div>`;
-    document.getElementById('bg-after-canvas').innerHTML =
-      `<div class="placeholder" style="padding:30px 20px;"><p style="font-size:12px;">Result appears here</p></div>`;
+    document.getElementById('bg-before-canvas').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><p>Upload an image</p></div>`;
+    document.getElementById('bg-after-canvas').innerHTML  = `<div class="placeholder" style="padding:30px 20px;"><p>Result appears here</p></div>`;
     document.getElementById('bg-dl-row').style.display = 'none';
   }
 
-  /* ══════════════════════════════════════════════════════════
-     BG REMOVE — call server
-  ══════════════════════════════════════════════════════════ */
   async function removeBackground() {
     if (!bgFile) return;
-
     const btn = document.getElementById('bg-gen-btn');
     setLoading(btn, true);
-
-    // Update button text to signal potentially longer wait
     btn.querySelector('.btn-label').textContent = 'Processing\u2026';
-
     try {
       const form = new FormData();
       form.append('image', bgFile);
-
-      // NOTE: do NOT set Content-Type manually — browser sets multipart boundary
       const res = await fetch('/api/remove-bg', { method: 'POST', body: form });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Server error ${res.status}`);
-      }
-
-      const blob   = await res.blob();
-      bgResultUrl  = URL.createObjectURL(blob);
-
-      // Show result on checkerboard canvas
-      document.getElementById('bg-after-canvas').innerHTML =
-        `<img src="${bgResultUrl}" alt="Result"
-              style="max-width:100%;max-height:280px;object-fit:contain;" />`;
-
-      // Download row
-      const stem     = bgFile.name.replace(/\.[^.]+$/, '');
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || `Server error ${res.status}`); }
+      const blob = await res.blob();
+      bgResultUrl = URL.createObjectURL(blob);
+      document.getElementById('bg-after-canvas').innerHTML = `<img src="${bgResultUrl}" alt="Result" style="max-width:100%;max-height:280px;object-fit:contain;" />`;
+      const stem = bgFile.name.replace(/\.[^.]+$/, '');
       const filename = `${stem}_nobg.png`;
       document.getElementById('bg-result-filename').textContent = filename;
       const dlRow = document.getElementById('bg-dl-row');
-      dlRow.style.display    = 'flex';
-      dlRow.dataset.filename = filename;
-
-      // Update preview dimension badge
-      document.getElementById('preview-dim').textContent =
-        `${bgFile.name}  →  transparent PNG`;
-
-      // Auto-download
+      dlRow.style.display = 'flex'; dlRow.dataset.filename = filename;
+      document.getElementById('preview-dim').textContent = `${bgFile.name}  →  transparent PNG`;
       triggerDownload(bgResultUrl, filename);
       toast('Background removed & downloaded!', 'success');
-
-    } catch (err) {
-      toast(err.message, 'error');
-    } finally {
-      btn.querySelector('.btn-label').textContent = '\u2702 REMOVE BACKGROUND';
-      setLoading(btn, false);
-    }
+    } catch (err) { toast(err.message, 'error'); }
+    finally { btn.querySelector('.btn-label').textContent = '\u2702 REMOVE BACKGROUND'; setLoading(btn, false); }
   }
 
-  /* ── Re-download last result ────────────────────────────── */
   function reDownloadBg() {
     if (!bgResultUrl) return;
     const row = document.getElementById('bg-dl-row');
     triggerDownload(bgResultUrl, row.dataset.filename);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     CONVERT — drag & drop + file input
-  ══════════════════════════════════════════════════════════ */
-  let convFiles     = [];
-  let convFmt       = 'PNG';
-  let convResultUrl = null;
+  let convFiles = [], convFmt = 'PNG', convResultUrl = null;
 
   (function initConvDropZone() {
     const zone  = document.getElementById('conv-drop-zone');
     const input = document.getElementById('conv-file-input');
-
     zone.addEventListener('click', () => input.click());
     zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
     zone.addEventListener('dragenter', e  => { e.preventDefault(); });
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      if (e.dataTransfer.files.length) setConvFiles(e.dataTransfer.files);
-    });
-
-    input.addEventListener('change', e => {
-      if (e.target.files.length) setConvFiles(e.target.files);
-    });
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files.length) setConvFiles(e.dataTransfer.files); });
+    input.addEventListener('change', e => { if (e.target.files.length) setConvFiles(e.target.files); });
   })();
 
   function setConvFiles(fileList) {
-    convFiles     = Array.from(fileList);
-    convResultUrl = null;
-
-    const chip = document.getElementById('conv-selected');
-    document.getElementById('conv-selected-name').textContent =
-      convFiles.length === 1 ? convFiles[0].name : `${convFiles.length} files selected`;
-    chip.classList.remove('hidden');
-
+    convFiles = Array.from(fileList); convResultUrl = null;
+    document.getElementById('conv-selected-name').textContent = convFiles.length === 1 ? convFiles[0].name : `${convFiles.length} files selected`;
+    document.getElementById('conv-selected').classList.remove('hidden');
     document.getElementById('conv-btn').disabled = false;
     document.getElementById('conv-dl-row').style.display = 'none';
     renderConvFileList();
-
     if (currentMode !== 'convert') switchMode('convert');
   }
 
   function clearConvFiles() {
-    convFiles     = [];
-    convResultUrl = null;
+    convFiles = []; convResultUrl = null;
     document.getElementById('conv-file-input').value = '';
     document.getElementById('conv-selected').classList.add('hidden');
     document.getElementById('conv-btn').disabled = true;
@@ -1744,77 +1419,42 @@
     convFmt = fmt;
     document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('conv-quality-wrap').style.display =
-      fmt === 'JPEG' ? 'block' : 'none';
+    document.getElementById('conv-quality-wrap').style.display = fmt === 'JPEG' ? 'block' : 'none';
   }
 
   function renderConvFileList(statuses) {
     const list = document.getElementById('conv-file-list');
     list.innerHTML = convFiles.map((f, i) => {
       const s = statuses ? statuses[i] : 'pending';
-      return `
-        <div class="conv-file-item" id="conv-item-${i}">
-          <span class="conv-file-name">${f.name}</span>
-          <span class="conv-file-status ${s}" id="conv-status-${i}">
-            ${s.toUpperCase()}
-          </span>
-        </div>`;
+      return `<div class="conv-file-item" id="conv-item-${i}"><span class="conv-file-name">${f.name}</span><span class="conv-file-status ${s}" id="conv-status-${i}">${s.toUpperCase()}</span></div>`;
     }).join('');
   }
 
-  /* ══════════════════════════════════════════════════════════
-     CONVERT — call server
-  ══════════════════════════════════════════════════════════ */
   async function convertFiles() {
     if (!convFiles.length) return;
-
-    const btn     = document.getElementById('conv-btn');
+    const btn = document.getElementById('conv-btn');
     const quality = parseInt(document.getElementById('conv-quality').value) || 90;
     setLoading(btn, true);
     renderConvFileList(convFiles.map(() => 'pending'));
-
     try {
       const form = new FormData();
       convFiles.forEach(f => form.append('images', f));
-      form.append('format',  convFmt);
-      form.append('quality', quality);
-
+      form.append('format', convFmt); form.append('quality', quality);
       const res = await fetch('/api/convert', { method: 'POST', body: form });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Server error ${res.status}`);
-      }
-
-      // Mark all done
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || `Server error ${res.status}`); }
       renderConvFileList(convFiles.map(() => 'done'));
-
-      const blob    = await res.blob();
+      const blob = await res.blob();
       convResultUrl = URL.createObjectURL(blob);
-
-      const ext      = convFmt === 'JPEG' ? 'jpg' : convFmt.toLowerCase();
-      const filename = convFiles.length === 1
-        ? convFiles[0].name.replace(/\.[^.]+$/, '') + '.' + ext
-        : `converted_${convFiles.length}_files.zip`;
-
+      const ext = convFmt === 'JPEG' ? 'jpg' : convFmt.toLowerCase();
+      const filename = convFiles.length === 1 ? convFiles[0].name.replace(/\.[^.]+$/, '') + '.' + ext : `converted_${convFiles.length}_files.zip`;
       const dlRow = document.getElementById('conv-dl-row');
-      dlRow.style.display    = 'flex';
-      dlRow.dataset.url      = convResultUrl;
-      dlRow.dataset.filename = filename;
+      dlRow.style.display = 'flex'; dlRow.dataset.url = convResultUrl; dlRow.dataset.filename = filename;
       document.getElementById('conv-dl-filename').textContent = filename;
-
-      document.getElementById('preview-dim').textContent =
-        `${convFiles.length} file${convFiles.length > 1 ? 's' : ''} → .${ext.toUpperCase()}`;
-
+      document.getElementById('preview-dim').textContent = `${convFiles.length} file${convFiles.length > 1 ? 's' : ''} → .${ext.toUpperCase()}`;
       triggerDownload(convResultUrl, filename);
       toast(`${convFiles.length} file${convFiles.length > 1 ? 's' : ''} converted & downloaded ✓`, 'success');
-
-    } catch (err) {
-      renderConvFileList(convFiles.map(() => 'error'));
-      toast(err.message, 'error');
-    } finally {
-      setLoading(btn, false);
-    }
+    } catch (err) { renderConvFileList(convFiles.map(() => 'error')); toast(err.message, 'error'); }
+    finally { setLoading(btn, false); }
   }
 
   function reDownloadConv() {
@@ -1822,63 +1462,35 @@
     if (row.dataset.url) triggerDownload(row.dataset.url, row.dataset.filename);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     VIDEO CONVERT — drag & drop + file input
-  ══════════════════════════════════════════════════════════ */
-  let vidFile      = null;
-  let vidFmt       = 'MP3';
-  let vidBitrate   = '192k';
-  let vidResultUrl = null;
+  let vidFile = null, vidFmt = 'MP3', vidBitrate = '192k', vidResultUrl = null;
 
   (function initVidDropZone() {
     const zone  = document.getElementById('vid-drop-zone');
     const input = document.getElementById('vid-file-input');
-
     zone.addEventListener('click', () => input.click());
     zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
     zone.addEventListener('dragenter', e  => { e.preventDefault(); });
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      if (e.dataTransfer.files[0]) setVidFile(e.dataTransfer.files[0]);
-    });
-
-    input.addEventListener('change', e => {
-      if (e.target.files[0]) setVidFile(e.target.files[0]);
-    });
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) setVidFile(e.dataTransfer.files[0]); });
+    input.addEventListener('change', e => { if (e.target.files[0]) setVidFile(e.target.files[0]); });
   })();
 
   function setVidFile(file) {
-    vidFile      = file;
-    vidResultUrl = null;
-
+    vidFile = file; vidResultUrl = null;
     document.getElementById('vid-selected-name').textContent = file.name;
     document.getElementById('vid-selected').classList.remove('hidden');
     document.getElementById('vid-btn').disabled = false;
-
-    // Reset result area to placeholder
-    document.getElementById('vid-result-area').innerHTML = `
-      <div class="placeholder" style="padding:30px 20px;">
-        <div class="placeholder-icon" style="font-size:36px;opacity:.25;">▶</div>
-        <p style="font-size:12px;">${file.name}<br/><span style="color:var(--text-dim)">Ready — hit Convert Video</span></p>
-      </div>`;
+    document.getElementById('vid-result-area').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><div class="placeholder-icon" style="font-size:32px;opacity:.2;">▶</div><p>${file.name}<br/><span style="color:var(--text-dim)">Ready. Hit Convert Video.</span></p></div>`;
     document.getElementById('vid-dl-row').style.display = 'none';
-
     if (currentMode !== 'convert') switchMode('convert');
   }
 
   function clearVidFile() {
-    vidFile      = null;
-    vidResultUrl = null;
+    vidFile = null; vidResultUrl = null;
     document.getElementById('vid-file-input').value = '';
     document.getElementById('vid-selected').classList.add('hidden');
     document.getElementById('vid-btn').disabled = true;
-    document.getElementById('vid-result-area').innerHTML = `
-      <div class="placeholder" style="padding:30px 20px;">
-        <div class="placeholder-icon" style="font-size:36px;opacity:.25;">▶</div>
-        <p style="font-size:12px;">Drop a video on the left,<br/>then hit Convert Video</p>
-      </div>`;
+    document.getElementById('vid-result-area').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><div class="placeholder-icon" style="font-size:32px;opacity:.2;">▶</div><p>Drop a video on the left, then hit Convert Video.</p></div>`;
     document.getElementById('vid-dl-row').style.display = 'none';
   }
 
@@ -1896,89 +1508,41 @@
     el.classList.add('active');
   }
 
-  /* ══════════════════════════════════════════════════════════
-     VIDEO CONVERT — call server
-  ══════════════════════════════════════════════════════════ */
   async function convertVideo() {
     if (!vidFile) return;
-
     const btn = document.getElementById('vid-btn');
     setLoading(btn, true);
     btn.querySelector('.btn-label').textContent = 'Converting\u2026';
-
-    // Show in-progress state
-    document.getElementById('vid-result-area').innerHTML = `
-      <div class="placeholder" style="padding:30px 20px;">
-        <div class="placeholder-icon" style="font-size:36px;opacity:.4;">⏳</div>
-        <p style="font-size:12px;">Converting — this may take a moment…</p>
-      </div>`;
+    document.getElementById('vid-result-area').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><div class="placeholder-icon" style="font-size:32px;opacity:.35;">⏳</div><p>Converting. This may take a moment.</p></div>`;
     document.getElementById('vid-dl-row').style.display = 'none';
-
     try {
-      const fps   = parseInt(document.getElementById('vid-fps').value)   || 10;
+      const fps = parseInt(document.getElementById('vid-fps').value) || 10;
       const width = parseInt(document.getElementById('vid-width').value) || 480;
-
       const form = new FormData();
-      form.append('video',   vidFile);
-      form.append('output',  vidFmt);
-      form.append('bitrate', vidBitrate);
-      form.append('fps',     fps);
-      form.append('width',   width);
-
+      form.append('video', vidFile); form.append('output', vidFmt);
+      form.append('bitrate', vidBitrate); form.append('fps', fps); form.append('width', width);
       const res = await fetch('/api/video/convert', { method: 'POST', body: form });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Server error ${res.status}`);
-      }
-
-      const blob    = await res.blob();
-      vidResultUrl  = URL.createObjectURL(blob);
-      const stem    = vidFile.name.replace(/\.[^.]+$/, '');
-      const ext     = vidFmt === 'MP3' ? 'mp3' : 'gif';
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || `Server error ${res.status}`); }
+      const blob = await res.blob();
+      vidResultUrl = URL.createObjectURL(blob);
+      const stem = vidFile.name.replace(/\.[^.]+$/, '');
+      const ext  = vidFmt === 'MP3' ? 'mp3' : 'gif';
       const filename = `${stem}.${ext}`;
-
-      // Show result in preview area
       if (vidFmt === 'GIF') {
-        document.getElementById('vid-result-area').innerHTML = `
-          <div class="canvas-bg" style="min-height:160px;">
-            <img src="${vidResultUrl}" alt="Converted GIF"
-                 style="max-width:100%;max-height:420px;object-fit:contain;" />
-          </div>`;
+        document.getElementById('vid-result-area').innerHTML = `<div class="canvas-bg" style="min-height:160px;"><img src="${vidResultUrl}" alt="Converted GIF" style="max-width:100%;max-height:420px;object-fit:contain;" /></div>`;
       } else {
-        document.getElementById('vid-result-area').innerHTML = `
-          <div style="padding:18px;background:var(--surface2);border:1px solid var(--border);">
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
-                        letter-spacing:1px;margin-bottom:12px;">◈ MP3 READY</div>
-            <audio controls style="width:100%;filter:invert(1) hue-rotate(180deg);">
-              <source src="${vidResultUrl}" type="audio/mpeg">
-            </audio>
-          </div>`;
+        document.getElementById('vid-result-area').innerHTML = `<div style="padding:18px;background:var(--surface2);border:1px solid var(--border);"><div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:12px;">◈ MP3 READY</div><audio controls style="width:100%;filter:invert(1) hue-rotate(180deg);"><source src="${vidResultUrl}" type="audio/mpeg"></audio></div>`;
       }
-
-      // Download row
       const dlRow = document.getElementById('vid-dl-row');
-      dlRow.style.display    = 'flex';
-      dlRow.dataset.url      = vidResultUrl;
-      dlRow.dataset.filename = filename;
+      dlRow.style.display = 'flex'; dlRow.dataset.url = vidResultUrl; dlRow.dataset.filename = filename;
       document.getElementById('vid-dl-filename').textContent = filename;
-
-      document.getElementById('preview-dim').textContent =
-        `${vidFile.name}  →  .${ext.toUpperCase()}`;
-
+      document.getElementById('preview-dim').textContent = `${vidFile.name}  →  .${ext.toUpperCase()}`;
       triggerDownload(vidResultUrl, filename);
       toast(`Video converted to ${ext.toUpperCase()} & downloaded ✓`, 'success');
-
     } catch (err) {
-      document.getElementById('vid-result-area').innerHTML = `
-        <div class="placeholder" style="padding:30px 20px;">
-          <p style="font-size:12px;color:#ff4040;">${err.message}</p>
-        </div>`;
+      document.getElementById('vid-result-area').innerHTML = `<div class="placeholder" style="padding:30px 20px;"><p style="color:#ef4444;">${err.message}</p></div>`;
       toast(err.message, 'error');
-    } finally {
-      btn.querySelector('.btn-label').textContent = '\u26a1 CONVERT VIDEO';
-      setLoading(btn, false);
-    }
+    } finally { btn.querySelector('.btn-label').textContent = '\u26a1 CONVERT VIDEO'; setLoading(btn, false); }
   }
 
   function reDownloadVid() {
